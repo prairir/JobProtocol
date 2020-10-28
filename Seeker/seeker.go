@@ -4,13 +4,21 @@ import (
 	"bufio"
 	"container/list"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
+	"strings"
 	"time"
 )
 
+type IdvSession struct {
+	id         int64
+	state      int
+	connection net.Conn
+}
+
 func main() {
-	// the port that we use
+	// read port from console
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter port:")
 	port, _ := reader.ReadString('\n')
@@ -32,12 +40,14 @@ func main() {
 
 	for {
 		conn, err := listener.Accept()
+		// if error go through close connection process
 		if err != nil {
-			continue
+			closeConnection(conn)
 		}
 
 		go handleConnection(conn, queue)
 
+		// just for testing purposes
 		daytime := time.Now().String()
 		conn.Write([]byte(daytime)) // don't care about return value
 		conn.Close()                // we're finished with this client
@@ -52,10 +62,38 @@ func handleConnection(conn net.Conn, queue *list.List) {
 	// 3 ready for jobs
 	// 4 closed
 	state := 0
+	currSession := IdvSession{
+		// session ID is gonna be the time in nano seconds
+		// I thought bout writing a mathematically unique ID
+		// but the chances are crazy low soooooooo I aint doing it
+		time.Now().UnixNano(),
+		state,
+		conn,
+	}
+	queue.PushBack(currSession)
 	for {
+		result, err := ioutil.ReadAll(conn)
+		if err != nil {
+			closeConnection(conn)
+		}
 
+		switch {
+		case strings.Compare(string(result), "HELLO") == 0:
+			conn.Write([]byte("HELLOACK"))
+			state = 1
+		case strings.Compare(string(result), "AVL") == 0:
+			state = 2
+		case strings.Compare(string(result), "JOB TIME") == 0:
+			daytime := time.Now().String()
+			conn.Write([]byte(daytime))
+		}
 	}
 
+}
+
+func closeConnection(conn net.Conn) {
+	conn.Write([]byte("BYE"))
+	conn.Close()
 }
 
 func checkError(err error) {
