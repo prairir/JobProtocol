@@ -46,11 +46,6 @@ func main() {
 		}
 
 		go handleConnection(conn, queue)
-
-		// just for testing purposes
-		daytime := time.Now().String()
-		conn.Write([]byte(daytime)) // don't care about return value
-		conn.Close()                // we're finished with this client
 	}
 }
 
@@ -58,7 +53,7 @@ func handleConnection(conn net.Conn, queue *list.List) {
 	// state values
 	// 0 = connection initalized
 	// 1 connection established
-	// 2 avaible
+	// 2 full
 	// 3 ready for jobs
 	// 4 closed
 	state := 0
@@ -71,24 +66,62 @@ func handleConnection(conn net.Conn, queue *list.List) {
 		conn,
 	}
 	queue.PushBack(currSession)
+	// event loop
 	for {
 		result, err := ioutil.ReadAll(conn)
 		if err != nil {
 			closeConnection(conn)
 		}
 
-		switch {
-		case strings.Compare(string(result), "HELLO") == 0:
-			conn.Write([]byte("HELLOACK"))
-			state = 1
-		case strings.Compare(string(result), "AVL") == 0:
+		cleanedResult := strings.TrimSpace(string(result))
+
+		// set state based on position
+		var position int = getPosition(&currSession, queue)
+		if position == 0 {
+			state = 3
+		} else {
 			state = 2
-		case strings.Compare(string(result), "JOB TIME") == 0:
-			daytime := time.Now().String()
-			conn.Write([]byte(daytime))
+		}
+
+		// initial message handling
+		if state == 0 && strings.Compare(cleanedResult, "HELLO") == 0 {
+			state = 1
+			conn.Write([]byte("HELLOACK"))
+		} else if state == 2 { // options for when its not at front of queue
+			if strings.Compare(cleanedResult, "AVL") == 0 {
+				conn.Write([]byte("FULL"))
+			}
+		} else if state == 3 { // options for when it IS at the front of the queue
+			if strings.Compare(cleanedResult, "AVL") == 0 {
+				conn.Write([]byte("AVLACK"))
+			} else if strings.Compare(cleanedResult, "JOB TIME") == 0 {
+				daytime := time.Now().String()
+				conn.Write([]byte("DONE TIME " + daytime))
+			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 {
+				// equation checker stuff here
+			}
+		}
+
+		if state == 4 {
+			break
 		}
 	}
 
+}
+
+func getPosition(currSession *IdvSession, queue *list.List) int {
+	// Iterate through list and print its contents.
+	// ya ya ya i know it could be a binary search but i dont have enough time to write that
+	position := 0
+	for e, index := queue.Front(), 0; e != nil; e, index = e.Next(), index+1 {
+		fmt.Println(e.Value)
+		// checking the value of the current session to the session in queue
+		if currSession.id == e.Value.(*IdvSession).id {
+			position = index
+			break
+		}
+	}
+	return position
 }
 
 func closeConnection(conn net.Conn) {
