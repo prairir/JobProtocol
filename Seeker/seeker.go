@@ -46,11 +46,6 @@ func main() {
 		}
 
 		go handleConnection(conn, queue)
-
-		// just for testing purposes
-		daytime := time.Now().String()
-		conn.Write([]byte(daytime)) // don't care about return value
-		conn.Close()                // we're finished with this client
 	}
 }
 
@@ -99,21 +94,34 @@ func handleConnection(conn net.Conn, queue *list.List) {
 		} else if state == 3 { // options for when it IS at the front of the queue
 			if strings.Compare(cleanedResult, "AVL") == 0 {
 				conn.Write([]byte("AVLACK"))
-			} else if strings.Compare(cleanedRestult, "JOB TIME") == 0 {
+			} else if strings.Compare(cleanedResult, "JOB TIME") == 0 {
 				daytime := time.Now().String()
 				conn.Write([]byte(daytime))
-			} else if strings.Compare(cleanedRestult[:6], "JOB EQ") == 0 {
+			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 {
 				// equation checker stuff here
 			}
 		}
-		daytime := time.Now().String()
-		conn.Write([]byte(daytime))
+
+		if state == 4 {
+			break
+		}
 	}
 
 }
 
 func getPosition(currSession *IdvSession, queue *list.List) int {
-
+	// Iterate through list and print its contents.
+	// ya ya ya i know it could be a binary search but i dont have enough time to write that
+	position := 0
+	for e, index := queue.Front(), 0; e != nil; e, index = e.Next(), index+1 {
+		fmt.Println(e.Value)
+		// checking the value of the current session to the session in queue
+		if currSession.id == e.Value.(*IdvSession).id {
+			position = index
+			break
+		}
+	}
+	return position
 }
 
 func closeConnection(conn net.Conn) {
