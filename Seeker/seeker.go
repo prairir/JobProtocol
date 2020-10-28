@@ -96,7 +96,7 @@ func handleConnection(conn net.Conn, queue *list.List) {
 				conn.Write([]byte("AVLACK"))
 			} else if strings.Compare(cleanedResult, "JOB TIME") == 0 {
 				daytime := time.Now().String()
-				conn.Write([]byte(daytime))
+				conn.Write([]byte("DONE TIME " + daytime))
 			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 {
 				// equation checker stuff here
 			}
