@@ -88,7 +88,9 @@ func handleConnections(conn net.Conn, mutex *sync.mutex, queue *list.list) {
 		// if state is 0, look for connection
 		if state == 0 {
 			conn.Write([]byte("HELLO"))
-		} else if state == 0 && strings.Compare(cleanedResult, "HELLOACK") == 0 {
+		} 
+		
+		if state == 0 && strings.Compare(cleanedResult, "HELLOACK") == 0 {
 			state = 1
 		} else {
 			state = 0
