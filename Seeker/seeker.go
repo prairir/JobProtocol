@@ -46,7 +46,7 @@ func main() {
 			closeConnection(conn)
 		}
 
-		go handleConnection(conn, mutex, queue)
+		go handleConnection(conn, &mutex, queue)
 	}
 }
 
@@ -74,16 +74,23 @@ func handleConnection(conn net.Conn, mutex *sync.Mutex, queue *list.List) {
 		result, err := ioutil.ReadAll(conn)
 		if err != nil {
 			closeConnection(conn)
+			state = 4
 		}
 
 		cleanedResult := strings.TrimSpace(string(result))
 
 		// set state based on position
-		var position int = getPosition(&currSession, mutex, queue)
+		position, entry := getPosition(&currSession, mutex, queue)
 		if position == 0 {
 			state = 3
 		} else {
 			state = 2
+		}
+
+		if state == 4 {
+			mutex.Lock()
+			queue.Remove(entry)
+			mutex.Unlock()
 		}
 
 		// initial message handling
@@ -103,6 +110,9 @@ func handleConnection(conn net.Conn, mutex *sync.Mutex, queue *list.List) {
 			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 {
 				// equation checker stuff here
 			}
+		} else if strings.Compare(cleanedResult, "BYE") == 0 {
+			state = 4
+			continue
 		}
 
 		if state == 4 {
@@ -112,11 +122,12 @@ func handleConnection(conn net.Conn, mutex *sync.Mutex, queue *list.List) {
 
 }
 
-func getPosition(currSession *IdvSession, mutex *sync.Mutex, queue *list.List) int {
+func getPosition(currSession *IdvSession, mutex *sync.Mutex, queue *list.List) (int, *list.Element) {
 	mutex.Lock()
 	// Iterate through list and print its contents.
 	// ya ya ya i know it could be a binary search but i dont have enough time to write that
 	position := 0
+	var e *list.Element
 	for e, index := queue.Front(), 0; e != nil; e, index = e.Next(), index+1 {
 		fmt.Println(e.Value)
 		// checking the value of the current session to the session in queue
@@ -126,7 +137,7 @@ func getPosition(currSession *IdvSession, mutex *sync.Mutex, queue *list.List) i
 		}
 	}
 	mutex.Unlock()
-	return position
+	return position, e
 }
 
 func closeConnection(conn net.Conn) {
