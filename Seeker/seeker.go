@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,8 +35,8 @@ func main() {
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	checkError(err)
 
-	// couldnt figure out a channel version
-	// its probably not memory safe but who knows
+	// the mutex makes it memory safe
+	var mutex sync.Mutex
 	queue := list.New()
 
 	for {
@@ -45,11 +46,11 @@ func main() {
 			closeConnection(conn)
 		}
 
-		go handleConnection(conn, queue)
+		go handleConnection(conn, mutex, queue)
 	}
 }
 
-func handleConnection(conn net.Conn, queue *list.List) {
+func handleConnection(conn net.Conn, mutex *sync.Mutex, queue *list.List) {
 	// state values
 	// 0 = connection initalized
 	// 1 connection established
@@ -65,7 +66,9 @@ func handleConnection(conn net.Conn, queue *list.List) {
 		state,
 		conn,
 	}
+	mutex.Lock()
 	queue.PushBack(currSession)
+	mutex.Unlock()
 	// event loop
 	for {
 		result, err := ioutil.ReadAll(conn)
@@ -76,7 +79,7 @@ func handleConnection(conn net.Conn, queue *list.List) {
 		cleanedResult := strings.TrimSpace(string(result))
 
 		// set state based on position
-		var position int = getPosition(&currSession, queue)
+		var position int = getPosition(&currSession, mutex, queue)
 		if position == 0 {
 			state = 3
 		} else {
@@ -109,7 +112,8 @@ func handleConnection(conn net.Conn, queue *list.List) {
 
 }
 
-func getPosition(currSession *IdvSession, queue *list.List) int {
+func getPosition(currSession *IdvSession, mutex *sync.Mutex, queue *list.List) int {
+	mutex.Lock()
 	// Iterate through list and print its contents.
 	// ya ya ya i know it could be a binary search but i dont have enough time to write that
 	position := 0
@@ -121,6 +125,7 @@ func getPosition(currSession *IdvSession, queue *list.List) int {
 			break
 		}
 	}
+	mutex.Unlock()
 	return position
 }
 
