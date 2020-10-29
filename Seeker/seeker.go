@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Knetic/govaluate"
 )
 
 type IdvSession struct {
@@ -107,8 +109,10 @@ func handleConnection(conn net.Conn, mutex *sync.Mutex, queue *list.List) {
 			} else if strings.Compare(cleanedResult, "JOB TIME") == 0 {
 				daytime := time.Now().String()
 				conn.Write([]byte("DONE TIME " + daytime))
-			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 {
-				// equation checker stuff here
+			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 { // evaluate equation
+				expression, _ := govaluate.NewEvaluableExpression(cleanedResult[6:])
+				expResult, _ := expression.Evaluate(nil)
+				conn.Write([]byte("DONE EQ " + expResult.(string)))
 			}
 		} else if strings.Compare(cleanedResult, "BYE") == 0 {
 			state = 4
