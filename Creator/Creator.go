@@ -86,13 +86,10 @@ func handleConnections(conn net.Conn, mutex *sync.mutex, queue *list.list) {
 		var positiong int = getPosition(&currSession, queue)
 
 		// if state is 0, look for connection
-		if state == 0 {
-			conn.Write([]byte("HELLO"))
-		} 
-		
 		if state == 0 && strings.Compare(cleanedResult, "HELLOACK") == 0 {
 			state = 1
-		} else {
+		} else if state == 0 {
+		    conn.Write([]byte("HELLO"))
 			state = 0
 		}
 
