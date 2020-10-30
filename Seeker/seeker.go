@@ -1,33 +1,25 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/Knetic/govaluate"
 )
 
+const (
+	CONN_ADDR = "localhost"
+	CONN_PORT = 7777
+	CONN_TYPE = "tcp"
+)
+
 func main() {
-	// read port from console
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Enter address to connect to: ")
-	addr, _ := reader.ReadString('\n')
-
-	fmt.Print("Enter port to connect to: ")
-	port, _ := reader.ReadString('\n')
-	// add the address and get rid of the \n at the end
-	fullAddr := addr[:len(addr)-1] + ":" + port[:len(port)-1]
-	fmt.Println(addr)
-
 	// set timeout and connection
-	timeout, err := time.ParseDuration("5s")
-	conn, err := net.DialTimeout("tcp", fullAddr, timeout)
-	checkError(err)
+	conn, err := net.Dial(CONN_TYPE, fmt.Sprint(CONN_ADDR, ":", CONN_PORT))
+	fatalErrorCheck(err)
 
 	// state
 	// 0 initial connection
@@ -37,14 +29,14 @@ func main() {
 	// 4 closed
 	state := 0
 	for {
+		fmt.Println("test1")
 		result, err := ioutil.ReadAll(conn)
+		fmt.Println("test2")
 		// clean the result and avoid error
-		var cleanedResult string
 		if err != nil {
 			continue
-		} else {
-			cleanedResult = strings.TrimSpace(string(result))
-		}
+		} 
+		cleanedResult := strings.TrimSpace(string(result))
 
 		// send HELLO at initial connection
 		if state == 0 {
@@ -76,7 +68,7 @@ func main() {
 	conn.Close()
 }
 
-func checkError(err error) {
+func fatalErrorCheck(err error) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
 		os.Exit(1)
