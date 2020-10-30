@@ -14,41 +14,59 @@ import (
 	"github.com/Knetic/govaluate"
 )
 
-type IdvSession struct {
-	id         int64
-	state      int
-	connection net.Conn
-}
-
 func main() {
 	// read port from console
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Print("Enter port:")
+	fmt.Print("Enter address to connect to:")
+	addr, _ := reader.ReadString('\n')
+
+	fmt.Print("Enter port to connect to:")
 	port, _ := reader.ReadString('\n')
-	// add the address and get rid of the \n at the end of port
-	addr := "127.0.0.1:" + port[:len(port)-1]
+	// add the address and get rid of the \n at the end
+	fullAddr := addr[:len(addr)-1] + port[:len(port)-1]
 	fmt.Println(addr)
 
-	// open port for tcp connection
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	// set timeout and connection
+	timeout, err := time.ParseDuration("5s")
+	conn, err := net.DialTimeout("tcp", fullAddr, timeout)
 	checkError(err)
 
-	// create a listener on that open port
-	listener, err := net.ListenTCP("tcp", tcpAddr)
-	checkError(err)
-
-	// the mutex makes it memory safe
-	var mutex sync.Mutex
-	queue := list.New()
-
+	// state
+	// 0 initial connection
+	// 1 waiting for HELLOACK
+	// 2 first JOB EQN
+	// 3 accepted and waiting for second JOB EQN
+	// 4 closed
+	state := 0
 	for {
-		conn, err := listener.Accept()
-		// if error go through close connection process
+		result, err := ioutil.ReadAll(conn)
+		// clean the result and avoid error
+		var cleanedResult string
 		if err != nil {
-			closeConnection(conn)
+			continue
+		} else {
+			cleanedResult = strings.TrimSpace(string(result))
 		}
 
-		go handleConnection(conn, &mutex, queue)
+		// send HELLO at initial connection
+		if state == 0 {
+			conn.Write([]byte("HELLO"))
+		} else if state == 1 && cleanedResult == "HELLOACK" {
+			state = 2
+		} else if state == 2 && cleanedResult == "JOB EQN" {
+			conn.Write([]byte("ACPT JOB EQN"))
+			state = 3
+		} else if state == 3 && cleanedResult[:7] == "JOB EQN" {
+			expression, err := govaluate.NewEvaluableExpression(cleanedResult[6:])
+			if err != nil {
+				conn.Write([]byte("JOB FAIL"))
+			}
+			expResult, err := expression.Evaluate(nil)
+			if err != nil {
+				conn.Write([]byte("JOB FAIL"))
+			}
+			conn.Write([]byte("DONE EQ " + expResult.(string)))
+		}
 	}
 }
 
