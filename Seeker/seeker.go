@@ -8,7 +8,10 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/Knetic/govaluate"
 )
 
 type IdvSession struct {
@@ -34,8 +37,8 @@ func main() {
 	listener, err := net.ListenTCP("tcp", tcpAddr)
 	checkError(err)
 
-	// couldnt figure out a channel version
-	// its probably not memory safe but who knows
+	// the mutex makes it memory safe
+	var mutex sync.Mutex
 	queue := list.New()
 
 	for {
@@ -45,11 +48,11 @@ func main() {
 			closeConnection(conn)
 		}
 
-		go handleConnection(conn, queue)
+		go handleConnection(conn, &mutex, queue)
 	}
 }
 
-func handleConnection(conn net.Conn, queue *list.List) {
+func handleConnection(conn net.Conn, mutex *sync.Mutex, queue *list.List) {
 	// state values
 	// 0 = connection initalized
 	// 1 connection established
@@ -65,22 +68,31 @@ func handleConnection(conn net.Conn, queue *list.List) {
 		state,
 		conn,
 	}
+	mutex.Lock()
 	queue.PushBack(currSession)
+	mutex.Unlock()
 	// event loop
 	for {
 		result, err := ioutil.ReadAll(conn)
 		if err != nil {
 			closeConnection(conn)
+			state = 4
 		}
 
 		cleanedResult := strings.TrimSpace(string(result))
 
 		// set state based on position
-		var position int = getPosition(&currSession, queue)
+		position, entry := getPosition(&currSession, mutex, queue)
 		if position == 0 {
 			state = 3
 		} else {
 			state = 2
+		}
+
+		if state == 4 {
+			mutex.Lock()
+			queue.Remove(entry)
+			mutex.Unlock()
 		}
 
 		// initial message handling
@@ -97,9 +109,14 @@ func handleConnection(conn net.Conn, queue *list.List) {
 			} else if strings.Compare(cleanedResult, "JOB TIME") == 0 {
 				daytime := time.Now().String()
 				conn.Write([]byte("DONE TIME " + daytime))
-			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 {
-				// equation checker stuff here
+			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 { // evaluate equation
+				expression, _ := govaluate.NewEvaluableExpression(cleanedResult[6:])
+				expResult, _ := expression.Evaluate(nil)
+				conn.Write([]byte("DONE EQ " + expResult.(string)))
 			}
+		} else if strings.Compare(cleanedResult, "BYE") == 0 {
+			state = 4
+			continue
 		}
 
 		if state == 4 {
@@ -109,10 +126,12 @@ func handleConnection(conn net.Conn, queue *list.List) {
 
 }
 
-func getPosition(currSession *IdvSession, queue *list.List) int {
+func getPosition(currSession *IdvSession, mutex *sync.Mutex, queue *list.List) (int, *list.Element) {
+	mutex.Lock()
 	// Iterate through list and print its contents.
 	// ya ya ya i know it could be a binary search but i dont have enough time to write that
 	position := 0
+	var e *list.Element
 	for e, index := queue.Front(), 0; e != nil; e, index = e.Next(), index+1 {
 		fmt.Println(e.Value)
 		// checking the value of the current session to the session in queue
@@ -121,7 +140,8 @@ func getPosition(currSession *IdvSession, queue *list.List) int {
 			break
 		}
 	}
-	return position
+	mutex.Unlock()
+	return position, e
 }
 
 func closeConnection(conn net.Conn) {
