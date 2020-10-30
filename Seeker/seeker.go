@@ -58,19 +58,22 @@ func main() {
 			expression, err := govaluate.NewEvaluableExpression(cleanedResult[6:])
 			if err != nil {
 				conn.Write([]byte("JOB FAIL"))
+				break
 			}
 			expResult, err := expression.Evaluate(nil)
 			if err != nil {
 				conn.Write([]byte("JOB FAIL"))
+				break
+			} else {
+				conn.Write([]byte("JOB SUCC " + expResult.(string)))
 			}
-			conn.Write([]byte("JOB SUCC " + expResult.(string)))
 			state = 4
 		}
 		if state == 4 {
-			conn.Close()
 			break
 		}
 	}
+	conn.Close()
 }
 
 func checkError(err error) {
