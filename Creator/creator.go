@@ -9,14 +9,6 @@ import (
 	"sync"
 )
 
-/*
-type IdvSession struct {
-	id         int64
-	state      int
-	connection net.Conn
-}
-*/
-
 const (
 	CONN_ADDR = "localhost"
 	CONN_PORT = 7777
@@ -110,8 +102,8 @@ func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
 		// do the full query since the job was accepted
 		fmt.Fprintln(conn, query)
 		response, err := bufio.NewReader(conn).ReadString('\n')
-		fmt.Println("response: [", response[:8], "]")
 		if len(response) >= 10 && response[:8] == "JOB SUCC" {
+			fmt.Println("response: [", response[:8], "]")
 			fmt.Println("job done! result: ")
 			fmt.Println(response[9:])
 			mutex.Lock()
@@ -133,34 +125,15 @@ func handleHello(conn net.Conn, mutex *sync.Mutex, queue *[]net.Conn) {
 	
 	// initial message handling
 	if strings.Compare(cleanedResult, "HELLO") == 0 {
-		fmt.Fprintln(conn, "HELLOACK")
 		mutex.Lock()
 		*queue = append(*queue, conn)
 		fmt.Println(*queue)
 		mutex.Unlock()
+		fmt.Fprintln(conn, "HELLOACK")
+		fmt.Println("sent the HELLOACK")
 	}
 	return
 }
-
-/*
-func getPosition(currSession *IdvSession, mutex *sync.Mutex, queue *list.List) (int, *list.Element) {
-	mutex.Lock()
-	// Iterate through list and print its contents.
-	// ya ya ya i know it could be a binary search but i dont have enough time to write that
-	position := 0
-	var e *list.Element
-	for e, index := queue.Front(), 0; e != nil; e, index = e.Next(), index+1 {
-		fmt.Println(e.Value)
-		// checking the value of the current session to the session in queue
-		if currSession.id == e.Value.(*IdvSession).id {
-			position = index
-			break
-		}
-	}
-	mutex.Unlock()
-	return position, e
-}
-*/
 
 func fatalErrorCheck(err error) {
 	if err != nil {

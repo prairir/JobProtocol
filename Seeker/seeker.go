@@ -29,12 +29,13 @@ func main() {
 	// 4 closed
 	state := 0
 	// send HELLO at initial connection
-	conn.Write([]byte("HELLO"))
+	fmt.Fprintln(conn, "HELLO")
+	fmt.Println("sent HELLO")
 	state = 1
 	for {
-		fmt.Println("test1")
+		fmt.Println("waiting for creator...")
 		result, err := bufio.NewReader(conn).ReadString('\n')
-		fmt.Println("test2")
+		fmt.Println("received:", result)
 		if err != nil {
 			continue
 		}
@@ -43,25 +44,30 @@ func main() {
 		if state == 1 && cleanedResult == "HELLOACK" {
 			state = 2
 		} else if state == 2 && cleanedResult == "JOB EQN" {
-			conn.Write([]byte("ACPT JOB EQN"))
+			conn.Write([]byte("ACPT JOB EQN\r\n"))
+			fmt.Println("received:", result)
 			state = 3
 		} else if state == 3 && cleanedResult[:7] == "JOB EQN" {
-			expression, err := govaluate.NewEvaluableExpression(cleanedResult[6:])
+			fmt.Println("[", cleanedResult[8:], "]")
+			expression, err := govaluate.NewEvaluableExpression(cleanedResult[8:])
 			if err != nil {
-				conn.Write([]byte("JOB FAIL"))
+				fmt.Println("job failed... bad input?", err.Error())
+				conn.Write([]byte("JOB FAIL\r\n"))
 				break
 			}
 			expResult, err := expression.Evaluate(nil)
 			if err != nil {
-				conn.Write([]byte("JOB FAIL"))
+				fmt.Println("job failed... bad input?", err.Error())
+				conn.Write([]byte("JOB FAIL\r\n"))
 				break
 			} else {
-				conn.Write([]byte("JOB SUCC " + expResult.(string)))
+				conn.Write([]byte("JOB SUCC " + fmt.Sprint(expResult) + "\r\n"))
 			}
 			state = 4
 		}
 		if state == 4 {
-			break
+			state = 2
+			continue	
 		}
 	}
 	conn.Close()
