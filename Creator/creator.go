@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -58,10 +59,7 @@ func handleHello(conn net.Conn, mutex *sync.Mutex, queue []net.Conn) {
 	state := 0
 	// event loop
 	for {
-		result, err := ioutil.ReadAll(conn)
-		if err != nil {
-			fmt.Println("could not read from client: ", err.Error())
-		}
+		result, _ := bufio.NewReader(conn).ReadString('\n')
 		cleanedResult := strings.TrimSpace(string(result))
 		fmt.Println(cleanedResult)
 		return

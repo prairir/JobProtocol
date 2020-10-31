@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
+	"bufio"
 
 	"github.com/Knetic/govaluate"
 )
@@ -33,7 +33,7 @@ func main() {
 	state = 1
 	for {
 		fmt.Println("test1")
-		result, err := ioutil.ReadAll(conn)
+		result, err := bufio.NewReader(conn).ReadString('\n')
 		fmt.Println("test2")
 		if err != nil {
 			continue
