@@ -35,7 +35,7 @@ func main() {
 		// clean the result and avoid error
 		if err != nil {
 			continue
-		} 
+		}
 		cleanedResult := strings.TrimSpace(string(result))
 
 		// send HELLO at initial connection
