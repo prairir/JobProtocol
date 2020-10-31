@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strings"
@@ -34,9 +33,10 @@ func main() {
 	defer listener.Close()
 	fmt.Println("listening to", CONN_ADDR, "at port", CONN_PORT)
 
-	
 	var mutex sync.Mutex
 	var queue []net.Conn
+
+	go jobSender(&mutex, &queue)
 	for {
 		conn, err := listener.Accept()
 		// if error go through close connection process
@@ -45,7 +45,7 @@ func main() {
 			os.Exit(1)
 		}
 		defer conn.Close()
-		go handleHello(conn, &mutex, queue)
+		go handleHello(conn, &mutex, &queue)
 	}
 }
 // state values
@@ -54,37 +54,54 @@ func main() {
 // -- PROCESSING JOB --
 // 2 JOB accepted/rejected
 // 3 JOB result
-
-func handleHello(conn net.Conn, mutex *sync.Mutex, queue []net.Conn) {
+func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
 	state := 0
-	// event loop
+	var cleanedResult string
 	for {
-		result, _ := bufio.NewReader(conn).ReadString('\n')
-		cleanedResult := strings.TrimSpace(string(result))
-		fmt.Println(cleanedResult)
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print("Enter query: ")
+		eqn, _ := reader.ReadString('\n')
+		var conn net.Conn
+		mutex.Lock()
+		fmt.Println(*queue)
+		if len(*queue) != 0 {
+			conn = (*queue)[0]
+			*queue = (*queue)[1:]
+			fmt.Println(*queue)
+		} else {
+			fmt.Println("No jobs available, please try again later. ")
+			mutex.Unlock()
+			continue
+		}
+		mutex.Unlock()
+		fmt.Println("conn:", conn, "state:", state, "eqn:", eqn)
 		return
 
-		// initial message handling
-		if state == 0 && strings.Compare(cleanedResult, "HELLO") == 0 {
-			state = 1
-			conn.Write([]byte("HELLOACK"))
-		} else if state == 2 { // options for when its not at front of queue
-			if strings.Compare(cleanedResult, "AVL") == 0 {
-				conn.Write([]byte("FULL"))
-			}
-		} else if state == 3 { // options for when it IS at the front of the queue
-			if strings.Compare(cleanedResult, "AVL") == 0 {
-				conn.Write([]byte("AVLACK"))
-			} else if strings.Compare(cleanedResult, "JOB TIME") == 0 {
-				daytime := time.Now().String()
-				conn.Write([]byte("DONE TIME " + daytime))
-			} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 { // evaluate equation
-				expression, _ := govaluate.NewEvaluableExpression(cleanedResult[6:])
-				expResult, _ := expression.Evaluate(nil)
-				conn.Write([]byte("DONE EQ " + expResult.(string)))
-			}
+		if strings.Compare(cleanedResult, "JOB TIME") == 0 {
+			daytime := time.Now().String()
+			conn.Write([]byte("DONE TIME " + daytime))
+		} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 { // evaluate equation
+			expression, _ := govaluate.NewEvaluableExpression(cleanedResult[6:])
+			expResult, _ := expression.Evaluate(nil)
+			conn.Write([]byte("DONE EQ " + expResult.(string)))
 		}
 	}
+}
+
+func handleHello(conn net.Conn, mutex *sync.Mutex, queue *[]net.Conn) {
+	// event loop
+	result, _ := bufio.NewReader(conn).ReadString('\n')
+	cleanedResult := strings.TrimSpace(string(result))
+	
+	// initial message handling
+	if strings.Compare(cleanedResult, "HELLO") == 0 {
+		fmt.Fprintf(conn, "HELLOACK")
+		mutex.Lock()
+		*queue = append(*queue, conn)
+		fmt.Println(*queue)
+		mutex.Unlock()
+	}
+	return
 }
 
 /*
