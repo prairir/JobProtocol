@@ -7,9 +7,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
-
-	"github.com/Knetic/govaluate"
 )
 
 /*
@@ -55,12 +52,30 @@ func main() {
 // 2 JOB accepted/rejected
 // 3 JOB result
 func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
-	state := 0
-	var cleanedResult string
+	var query string
+	var smallQuery string
+	isNewQuery := true 
 	for {
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Print("Enter query: ")
-		eqn, _ := reader.ReadString('\n')
+		if isNewQuery {
+			reader := bufio.NewReader(os.Stdin)
+			fmt.Print("Enter query: ")
+			query, _ = reader.ReadString('\n')
+			query = strings.TrimSpace(query)
+			if len(query) >= 9 {
+				if query[:7] == "JOB EQN" {
+					smallQuery = query[:7]
+				} else if query[:8] == "JOB TIME" {
+					smallQuery = query[:8]
+				} else {
+					fmt.Println("invalid query, please use proper protocol standards")
+					continue
+				}
+			} else {
+				fmt.Println("invalid query, please use proper protocol standards")
+				continue
+			}
+		}
+		isNewQuery = true // variable reset 
 		var conn net.Conn
 		mutex.Lock()
 		fmt.Println(*queue)
@@ -74,16 +89,39 @@ func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
 			continue
 		}
 		mutex.Unlock()
-		fmt.Println("conn:", conn, "state:", state, "eqn:", eqn)
-		return
+		fmt.Println(smallQuery)
+		fmt.Fprintln(conn, smallQuery)
+		accept, err := bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			fmt.Println("Could not read to server, try again with new connection. ")
+			conn.Close()
+			isNewQuery = false
+			continue
+		}
+		if accept[:4] != "ACPT" {
+			fmt.Println("message not accepted. Trying with next connection. ")
+			isNewQuery = false // use the same query on a new connection
+			mutex.Lock()
+			*queue = append(*queue, conn)
+			mutex.Unlock()
+			continue
+		}
 
-		if strings.Compare(cleanedResult, "JOB TIME") == 0 {
-			daytime := time.Now().String()
-			conn.Write([]byte("DONE TIME " + daytime))
-		} else if strings.Compare(cleanedResult[:6], "JOB EQ") == 0 { // evaluate equation
-			expression, _ := govaluate.NewEvaluableExpression(cleanedResult[6:])
-			expResult, _ := expression.Evaluate(nil)
-			conn.Write([]byte("DONE EQ " + expResult.(string)))
+		// do the full query since the job was accepted
+		fmt.Fprintln(conn, query)
+		response, err := bufio.NewReader(conn).ReadString('\n')
+		fmt.Println("response: [", response[:8], "]")
+		if len(response) >= 10 && response[:8] == "JOB SUCC" {
+			fmt.Println("job done! result: ")
+			fmt.Println(response[9:])
+			mutex.Lock()
+			*queue = append(*queue, conn)
+			mutex.Unlock()
+		} else {
+			fmt.Println("job failed! trying with a new connection")
+			conn.Close()
+			isNewQuery = false
+			continue
 		}
 	}
 }
@@ -95,7 +133,7 @@ func handleHello(conn net.Conn, mutex *sync.Mutex, queue *[]net.Conn) {
 	
 	// initial message handling
 	if strings.Compare(cleanedResult, "HELLO") == 0 {
-		fmt.Fprintf(conn, "HELLOACK")
+		fmt.Fprintln(conn, "HELLOACK")
 		mutex.Lock()
 		*queue = append(*queue, conn)
 		fmt.Println(*queue)
