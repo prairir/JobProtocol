@@ -28,20 +28,19 @@ func main() {
 	// 3 accepted and waiting for second JOB EQN
 	// 4 closed
 	state := 0
+	// send HELLO at initial connection
+	conn.Write([]byte("HELLO"))
+	state = 1
 	for {
 		fmt.Println("test1")
 		result, err := ioutil.ReadAll(conn)
 		fmt.Println("test2")
-		// clean the result and avoid error
 		if err != nil {
 			continue
 		}
 		cleanedResult := strings.TrimSpace(string(result))
 
-		// send HELLO at initial connection
-		if state == 0 {
-			conn.Write([]byte("HELLO"))
-		} else if state == 1 && cleanedResult == "HELLOACK" {
+		if state == 1 && cleanedResult == "HELLOACK" {
 			state = 2
 		} else if state == 2 && cleanedResult == "JOB EQN" {
 			conn.Write([]byte("ACPT JOB EQN"))
