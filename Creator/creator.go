@@ -7,20 +7,17 @@ import (
 	"os"
 	"strings"
 	"sync"
-)
 
-const (
-	CONN_ADDR = "localhost"
-	CONN_PORT = 7777
-	CONN_TYPE = "tcp"
+	"github.com/prairir/JobProtocol/Globals"
 )
 
 func main() {
+	fmt.Println(globals.GetJobNames())
 	// create a listener on that open port
-	listener, err := net.Listen(CONN_TYPE, fmt.Sprint(CONN_ADDR, ":", CONN_PORT))
+	listener, err := net.Listen(globals.CONN_TYPE, fmt.Sprint(globals.CONN_ADDR, ":", globals.CONN_PORT))
 	fatalErrorCheck(err)
 	defer listener.Close()
-	fmt.Println("listening to", CONN_ADDR, "at port", CONN_PORT)
+	fmt.Println("listening to", globals.CONN_ADDR, "at port", globals.CONN_PORT)
 
 	var mutex sync.Mutex
 	var queue []net.Conn

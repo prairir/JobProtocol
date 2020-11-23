@@ -8,17 +8,13 @@ import (
 	"bufio"
 
 	"github.com/Knetic/govaluate"
-)
 
-const (
-	CONN_ADDR = "localhost"
-	CONN_PORT = 7777
-	CONN_TYPE = "tcp"
+	"github.com/prairir/JobProtocol/Globals"
 )
 
 func main() {
 	// set timeout and connection
-	conn, err := net.Dial(CONN_TYPE, fmt.Sprint(CONN_ADDR, ":", CONN_PORT))
+	conn, err := net.Dial(globals.CONN_TYPE, fmt.Sprint(globals.CONN_ADDR, ":", globals.CONN_PORT))
 	fatalErrorCheck(err)
 
 	// state
