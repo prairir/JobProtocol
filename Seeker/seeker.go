@@ -1,15 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
 	"strings"
-	"bufio"
 
 	"github.com/Knetic/govaluate"
 
-	"github.com/prairir/JobProtocol/Globals"
+	globals "github.com/prairir/JobProtocol/Globals"
 )
 
 func main() {
@@ -63,7 +63,7 @@ func main() {
 		}
 		if state == 4 {
 			state = 2
-			continue	
+			continue
 		}
 	}
 	conn.Close()
