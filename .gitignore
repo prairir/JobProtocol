@@ -1,4 +1,7 @@
 Creator/Creator
 Seeker/Seeker
 
+# external packages to not copy
+ext/ping-go
+
 *.exe
