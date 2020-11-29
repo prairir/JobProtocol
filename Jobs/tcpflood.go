@@ -79,7 +79,7 @@ func TCPFlood(destIPStr string, totalPacketToSend int) {
 	// loop as many times as given
 	for packetCounter := 0; packetCounter < totalPacketToSend; packetCounter++ {
 		// this can happen concurrently
-		go func(tcpPorts []string, destIP net.IP) {
+		go func(tcpPorts []int, destIP net.IP) {
 			// making the packet with a random port from list and dest IP
 			ipHeader, packetBytes := makePacket(tcpPorts[rand.Intn(len(tcpPorts))], destIP)
 			packetConn, _ := net.ListenPacket("ip4:tcp", "127.0.0.1")
