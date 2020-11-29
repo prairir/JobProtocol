@@ -7,9 +7,24 @@ const (
 )
 
 func GetJobNames() []string {
-	return []string {
+	return []string{
 		"EQN",
 		"HOSTUP",
 		"TCPFLOOD",
-		"UDPFLOOD" }
+		"UDPFLOOD"}
+}
+
+func GetTCPPorts() []int {
+	return []int{
+		25,
+		80,
+		443,
+		20,
+		21,
+		23,
+		143,
+		3389,
+		22,
+		53,
+		110}
 }
