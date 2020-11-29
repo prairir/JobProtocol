@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/prairir/JobProtocol/Globals"
+	globals "github.com/prairir/JobProtocol/Globals"
 )
 
 func main() {
@@ -34,16 +34,17 @@ func main() {
 		go handleHello(conn, &mutex, &queue)
 	}
 }
+
 // state values
-// 0 waiting for HELLO 
-// 1 HELLO received, add element to queue 
+// 0 waiting for HELLO
+// 1 HELLO received, add element to queue
 // -- PROCESSING JOB --
 // 2 JOB accepted/rejected
 // 3 JOB result
 func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
 	var query string
 	var smallQuery string
-	isNewQuery := true 
+	isNewQuery := true
 	for {
 		if isNewQuery {
 			reader := bufio.NewReader(os.Stdin)
@@ -64,7 +65,7 @@ func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
 				continue
 			}
 		}
-		isNewQuery = true // variable reset 
+		isNewQuery = true // variable reset
 		var conn net.Conn
 		mutex.Lock()
 		fmt.Println(*queue)
@@ -119,7 +120,7 @@ func handleHello(conn net.Conn, mutex *sync.Mutex, queue *[]net.Conn) {
 	// event loop
 	result, _ := bufio.NewReader(conn).ReadString('\n')
 	cleanedResult := strings.TrimSpace(string(result))
-	
+
 	// initial message handling
 	if strings.Compare(cleanedResult, "HELLO") == 0 {
 		mutex.Lock()
