@@ -69,7 +69,7 @@ func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	return ipHeader, tcpBuffer.Bytes()
 }
 
-// runs TCP flood to destination IP for as many packets as given
+// TCPFlood runs a flood with TCP packets to destination IP for as many packets as given
 func TCPFlood(destIPStr string, totalPacketToSend int) {
 	// setting random seed
 	rand.Seed(time.Now().UnixNano())

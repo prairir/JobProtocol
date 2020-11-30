@@ -14,10 +14,10 @@ import (
 func main() {
 	fmt.Println(globals.GetJobNames())
 	// create a listener on that open port
-	listener, err := net.Listen(globals.CONN_TYPE, fmt.Sprint(globals.CONN_ADDR, ":", globals.CONN_PORT))
+	listener, err := net.Listen(globals.ConnType, fmt.Sprint(globals.ConnAddr, ":", globals.ConnPort))
 	fatalErrorCheck(err)
 	defer listener.Close()
-	fmt.Println("listening to", globals.CONN_ADDR, "at port", globals.CONN_PORT)
+	fmt.Println("listening to", globals.ConnAddr, "at port", globals.ConnPort)
 
 	var mutex sync.Mutex
 	var queue []net.Conn

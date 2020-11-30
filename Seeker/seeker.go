@@ -14,7 +14,7 @@ import (
 
 func main() {
 	// set timeout and connection
-	conn, err := net.Dial(globals.CONN_TYPE, fmt.Sprint(globals.CONN_ADDR, ":", globals.CONN_PORT))
+	conn, err := net.Dial(globals.ConnType, fmt.Sprint(globals.ConnAddr, ":", globals.ConnPort))
 	fatalErrorCheck(err)
 
 	// state
