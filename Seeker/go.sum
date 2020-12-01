@@ -16,9 +16,9 @@ github.com/bachittle/ping-go/utils v0.0.0-20201129020523-ff8966fdee92/go.mod h1:
 github.com/google/gopacket v1.1.19 h1:ves8RnFZPGiFnTS0uPQStjwru6uO6h+nlr9j6fL7kF8=
 github.com/google/gopacket v1.1.19/go.mod h1:iJ8V8n6KS+z2U1A8pUwu8bW5SyEMkXJB8Yo/Vo+TKTo=
 github.com/jackpal/gateway v1.0.6/go.mod h1:lTpwd4ACLXmpyiCTRtfiNyVnUmqT9RivzCDQetPfnjA=
-github.com/prairir/JobProtocol v0.0.0-20201130191926-05206b9dc067 h1:R0kDep7isCcnmDDJ7AAjsbCGgV9W6W8N5kXhNhRfEeA=
-github.com/prairir/JobProtocol/Jobs v0.0.0-20201130191926-05206b9dc067 h1:DQ4fMLdRYCFQlaR5t9vzoqgH1p5MPEs5wcrBuddsjdU=
-github.com/prairir/JobProtocol/Jobs v0.0.0-20201130191926-05206b9dc067/go.mod h1:VUhwknpWECPHKLEd+oz8h/9dK5V38+YqNTKgZ3JYDG8=
+github.com/prairir/JobProtocol v0.0.0-20201129215838-d0a9081829b5 h1:naUcH4J7vSagwqvokQMRFFXEIXS6P0S84u+kZTjz6d4=
+github.com/prairir/JobProtocol/Jobs v0.0.0-20201129215838-d0a9081829b5 h1:gMp0bZuoUl/MmpPyZcBaFvqudtVOFal5M0sJsmKKoD4=
+github.com/prairir/JobProtocol/Jobs v0.0.0-20201129215838-d0a9081829b5/go.mod h1:0vJ9iV3fSx8kkKr/L75wp+wPlgmt4a/hoV8QC1i3fF0=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
