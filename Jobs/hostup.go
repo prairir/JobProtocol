@@ -74,7 +74,7 @@ func HostUp(hostname string, w io.Writer) (online []string, offline []string, er
 		if err != nil || msg.Type != ipv4.ICMPTypeEchoReply {
 			offline = append(offline, IPs[i].String())
 		} else {
-			fmt.Println(IPs[i], msg, err)
+			fmt.Fprintln(w, IPs[i], msg, err)
 			online = append(online, IPs[i].String())
 		}
 	}

