@@ -16,10 +16,10 @@ import (
 // returns string
 func randIP() string {
 	var fakeIP string
-	fakeIP += string(rand.Intn(255)) + "."
-	fakeIP += string(rand.Intn(255)) + "."
-	fakeIP += string(rand.Intn(255)) + "."
-	fakeIP += string(rand.Intn(255))
+	fakeIP += fmt.Sprint(rand.Intn(255)) + "."
+	fakeIP += fmt.Sprint(rand.Intn(255)) + "."
+	fakeIP += fmt.Sprint(rand.Intn(255)) + "."
+	fakeIP += fmt.Sprint(rand.Intn(255))
 	return fakeIP
 }
 
