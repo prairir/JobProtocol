@@ -28,3 +28,19 @@ func GetTCPPorts() []int {
 		53,
 		110}
 }
+
+func GetUDPPorts() []int {
+	return []int{
+		53,
+		67,
+		68,
+		69,
+		123,
+		137,
+		138,
+		139,
+		161,
+		162,
+		389,
+		636}
+}

