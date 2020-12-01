@@ -1,7 +1,5 @@
 module github.com/prairir/JobProtocol/Seeker
 
-replace github.com/prairir/JobProtocol/Globals => ../Globals
-
 go 1.15
 
 require (
@@ -11,4 +9,7 @@ require (
 	github.com/prairir/JobProtocol/Jobs v0.0.0-20201129215838-d0a9081829b5
 )
 
-replace github.com/prairir/JobProtocol/Globals => ../Globals
+replace (
+	github.com/prairir/JobProtocol/Jobs => ../Jobs
+	github.com/prairir/JobProtocol/Globals => ../Globals
+)
