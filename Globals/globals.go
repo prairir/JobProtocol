@@ -15,10 +15,11 @@ func GetJobNames() []string {
 		"EQN",
 		"HOSTUP",
 		"TCPFLOOD",
-		"UDPFLOOD"}
+		"UDPFLOOD",
+	}
 }
 
-// GetTCPPorts is an array of TCP ports
+// GetTCPPorts port is an array of TCP ports to be used in the TCP flood
 func GetTCPPorts() []int {
 	return []int{
 		25,
@@ -35,6 +36,7 @@ func GetTCPPorts() []int {
 	}
 }
 
+// GetUDPPorts is an array of UDP ports to be used in the UDP flood
 func GetUDPPorts() []int {
 	return []int{
 		53,
@@ -48,5 +50,6 @@ func GetUDPPorts() []int {
 		161,
 		162,
 		389,
-		636}
+		636,
+	}
 }

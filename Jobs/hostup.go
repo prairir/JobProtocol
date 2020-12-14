@@ -1,17 +1,14 @@
 package jobs
 
 import (
-	"errors"
 	"fmt"
 	"github.com/bachittle/ping-go/pinger"
 	"github.com/bachittle/ping-go/utils"
-	"golang.org/x/net/icmp"
-	"golang.org/x/net/ipv4"
 	"io"
 	"net"
 	"os"
 	"strings"
-	"time"
+	//"sync"
 )
 
 // HostUp checks if a given host is online with ICMP echo packets.
@@ -43,39 +40,21 @@ func HostUp(hostname string, w io.Writer) (online []string, offline []string, er
 		IPs = append(IPs, ip)
 	}
 
-	// returns error, or nil if success
-	for i := 0; i < len(IPs); i++ {
-		chanMsg := make(chan *icmp.Message, 1)
-		chanErr := make(chan error, 1)
+	for _, ip := range IPs {
+		fmt.Fprintln(w, "pinging ip", ip)
 		p := pinger.NewPinger()
-		_, err = p.SetDst(IPs[i])
+		_, err = p.SetDst(ip)
 		if err != nil {
 			return
 		}
-		// timeout goroutine
-		go func() {
-			msg, err := p.PingOne(nil)
-			if err != nil {
-				chanErr <- err
-			} else {
-				chanMsg <- msg
-			}
-		}()
-		// timeout select checking
-		var msg *icmp.Message
-		select {
-		case res := <-chanMsg:
-			msg = res
-		case res := <-chanErr:
-			err = res
-		case <-time.After(30 * time.Millisecond):
-			err = errors.New("timeout")
-		}
-		if err != nil || msg.Type != ipv4.ICMPTypeEchoReply {
-			offline = append(offline, IPs[i].String())
+		p.SetAmt(1)
+		p.Ping()
+		// code is bad but i dont know how to fix without a massive refactor
+		_, err = p.Pong(20)
+		if err != nil {
+			offline = append(offline, ip.String())
 		} else {
-			fmt.Fprintln(w, IPs[i], msg, err)
-			online = append(online, IPs[i].String())
+			online = append(online, ip.String())
 		}
 	}
 	return

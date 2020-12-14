@@ -72,7 +72,7 @@ func udpMakePacket(destPortSrc int, destIP net.IP) (*ipv4.Header, []byte) {
 	return ipHeader, udpBuffer.Bytes()
 }
 
-// runs TCP flood to destination IP for as many packets as given
+// UDPFlood runs a UDP flood to destination IP for as many packets as given
 func UDPFlood(destIPStr string, totalPacketToSend int) {
 	// setting random seed
 	rand.Seed(time.Now().UnixNano())
