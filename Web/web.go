@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 )
 
@@ -13,7 +14,7 @@ import (
 // job: string channel, give the job to the master loop
 type Server struct {
 	jobResult chan string
-	queue     chan []int
+	queue     chan []net.Conn
 	job       chan string
 }
 
@@ -40,7 +41,7 @@ func main() {
 	// creating a server struct so we can share channels to and from the
 	server := &Server{
 		jobResult: make(chan string),
-		queue:     make(chan []int),
+		queue:     make(chan []net.Conn),
 		job:       make(chan string),
 	}
 
