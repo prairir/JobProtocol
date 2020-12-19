@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"net/http"
+
+	creator "github.com/prairir/JobProtocol/Creator"
 )
 
 // struct has each channel that we need for the hanlders
@@ -14,13 +16,20 @@ import (
 // job: string channel, give the job to the master loop
 type Server struct {
 	jobResult chan string
-	queue     chan []net.Conn
+	queueRV   chan []net.Conn
+	queueTR   chan int
 	job       chan string
 }
 
 func (s *Server) queueHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("URL is: ", r.URL.Path)
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+
+	// send the message to write to it
+	s.queueTR <- 1
+
+	// recieves the queue
+	conn := <-s.queueRV
+	fmt.Fprint(w, "first conn is %s", conn[0].RemoteAddr().String())
 }
 
 func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +50,8 @@ func main() {
 	// creating a server struct so we can share channels to and from the
 	server := &Server{
 		jobResult: make(chan string),
-		queue:     make(chan []net.Conn),
+		queueRV:   make(chan []net.Conn),
+		queueTR:   make(chan int),
 		job:       make(chan string),
 	}
 
@@ -56,4 +66,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	creator.RunCreator(server.queueTR, server.queueRV)
+
 }

@@ -11,7 +11,7 @@ import (
 	globals "github.com/prairir/JobProtocol/Globals"
 )
 
-func main() {
+func RunCreator(queueTR chan int, queueRV chan []net.Conn) {
 	fmt.Println(globals.GetJobNames())
 	// create a listener on that open port
 	listener, err := net.Listen(globals.ConnType, fmt.Sprint(globals.ConnAddr, ":", globals.ConnPort))
@@ -31,6 +31,14 @@ func main() {
 		}
 		defer conn.Close()
 		go c.handleHello(conn)
+
+		// return the queue
+		select {
+		case <-queueTR:
+			queueRV <- c.queue
+		default:
+			break
+		}
 	}
 }
 
