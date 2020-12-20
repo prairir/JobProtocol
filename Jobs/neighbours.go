@@ -8,7 +8,7 @@ import (
 )
    
 
-func main(){
+func neighbours(){
 
   /*var add_MAC [6]byte
   var add_IP  [4]byte
