@@ -50,7 +50,7 @@ function spy() {
 		document.getElementById("count").style.display = "none";
 		document.getElementById("target").style.display = "block";
 		document.getElementById("submit").style.display = "block";
-		document.getElementById("target").setAttribute("placeholder", "Spy");
+		document.getElementById("target").setAttribute("placeholder", "Input number of seconds to run");
 	}
 }
 
