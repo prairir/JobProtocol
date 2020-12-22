@@ -10,7 +10,7 @@ import (
 )
    
 
-func []byte neighbours(duration time.duration){
+func []byte neighbours(duration time.Duration){
 
   var add_MAC [6]byte
   var add_IP  [4]byte
