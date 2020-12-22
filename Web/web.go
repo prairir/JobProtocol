@@ -56,7 +56,13 @@ func (s *Server) queueHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 		// changes the map to json
 		// writes the json to the writer
-		json.NewEncoder(w).Encode(queueJson)
+		err := json.NewEncoder(w).Encode(queueJson)
+
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("400 - Bad request"))
+			return
+		}
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("400 - Wrong request method"))
@@ -64,12 +70,32 @@ func (s *Server) queueHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+type jobJson struct {
+	job string
+}
+
 // go handler for job POST request
 // method: POST
+// data input:
+// ```
+// {
+// 	"job": "JOB EQN 1+2"
+// }
+// ```
 // output: status code
 func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
+		decoder := json.NewDecoder(r.Body)
 
+		var data jobJson
+		err := decoder.Decode(&data)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("400 - Bad request"))
+			return
+		}
+
+		s.jobInput <- data.job
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("400 - Wrong request method"))
@@ -96,7 +122,12 @@ func (s *Server) jobResultHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 		// changes the map to json
 		// writes the json to the writer
-		json.NewEncoder(w).Encode(queueJson)
+		err := json.NewEncoder(w).Encode(jobResultJson)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("400 - Bad request"))
+			return
+		}
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("400 - Wrong request method"))
