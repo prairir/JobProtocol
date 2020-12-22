@@ -13,7 +13,7 @@ func neighbours(duration time.Duration) []map[string][]byte {
 
 	go func() {
 		// opens packet souce on an interface
-		if handle, err := pcap.OpenLive("\\Device\\NPF_{2F557FE1-6FE0-4B4F-8C12-3B40FC5C87A6}", 1600, true, duration); err != nil {
+		if handle, err := pcap.OpenLive("eth0", 1600, true, duration); err != nil {
 			panic(err)
 		} else {
 
