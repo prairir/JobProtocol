@@ -20,7 +20,7 @@ func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string,
 	fmt.Println("listening to", globals.ConnAddr, "at port", globals.ConnPort)
 
 	c := Creator{}
-	go c.cmd(jobInput)
+	go c.cmd(jobInput, jobResult)
 	for {
 		// if error go through close connection process
 		fmt.Println("Waiting for Job Seeker...")
