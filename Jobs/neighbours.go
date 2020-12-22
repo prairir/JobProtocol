@@ -1,4 +1,4 @@
-package main
+package jobs
 
 import (
 
@@ -10,7 +10,7 @@ import (
 )
    
 
-func []byte neighbours(duration time.Duration){
+func neighbours(duration time.Duration) []byte {
 
   var add_MAC [6]byte
   var add_IP  [4]byte
