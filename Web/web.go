@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -19,7 +18,7 @@ type Server struct {
 	jobResult chan string
 	queueRV   chan []net.Conn
 	queueTR   chan int
-	job       chan string
+	jobInput  chan string
 }
 
 // go handler for queue GET request
@@ -65,14 +64,43 @@ func (s *Server) queueHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// go handler for job POST request
+// method: POST
+// output: status code
 func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("URL is: ", r.URL.Path)
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+	if r.Method == http.MethodPost {
+
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("400 - Wrong request method"))
+	}
 }
 
+// go handler for job GET request
+// method: GET
+// output:
+// ```
+// {
+// 	result: "2/32"
+// }
+// ```
 func (s *Server) jobResultHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("URL is: ", r.URL.Path)
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path)
+	if r.Method == http.MethodGet {
+		// create the map
+		var jobResultJson map[string]string
+		jobResultJson = make(map[string]string)
+
+		// put the input at result value
+		jobResultJson["result"] = <-s.jobResult
+
+		w.WriteHeader(http.StatusAccepted)
+		// changes the map to json
+		// writes the json to the writer
+		json.NewEncoder(w).Encode(queueJson)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("400 - Wrong request method"))
+	}
 }
 
 func main() {
@@ -85,7 +113,7 @@ func main() {
 		jobResult: make(chan string),
 		queueRV:   make(chan []net.Conn),
 		queueTR:   make(chan int),
-		job:       make(chan string),
+		jobInput:  make(chan string),
 	}
 
 	//handlers
@@ -100,6 +128,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	creator.RunCreator(server.queueTR, server.queueRV)
+	creator.RunCreator(server.queueTR, server.queueRV, server.jobInput, server.jobResult)
 
 }
