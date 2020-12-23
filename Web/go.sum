@@ -1,3 +1,6 @@
 github.com/Knetic/govaluate v3.0.0+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
+<<<<<<< HEAD
 github.com/prairir/JobProtocol/Globals v0.0.0-20201223035010-c67d396ff354 h1:MtwtYF4717L0DwUYHmtaoPHdWd6wuKrTi6DzOjpAYZI=
 github.com/prairir/JobProtocol/Globals v0.0.0-20201223035010-c67d396ff354/go.mod h1:bRDEbS0ZOKZ43DUXWddqAgoz8KNMP3pkrBTzGNc/f08=
+=======
+>>>>>>> upstream/main

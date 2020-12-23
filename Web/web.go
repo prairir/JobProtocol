@@ -40,9 +40,17 @@ func (s *Server) queueHandler(w http.ResponseWriter, r *http.Request) {
 		// send the message to write to it
 		s.queueTR <- 1
 
+		var connQueue []net.Conn
 		// recieves the queue
-		connQueue := <-s.queueRV
+		select {
+		case connQueue = <-s.queueRV:
+			break
+		default:
+			w.Write([]byte("{\"queue\": [ ]}"))
+			return
+		}
 
+		connQueue = <-s.queueRV
 		// just init stuff
 		var queueJson map[string][]string
 		queueJson = make(map[string][]string)
@@ -96,6 +104,8 @@ func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.jobInput <- data.job
+		w.WriteHeader(200)
+		w.Write([]byte("200 - Ok response"))
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("400 - Wrong request method"))
@@ -116,14 +126,21 @@ func (s *Server) jobResultHandler(w http.ResponseWriter, r *http.Request) {
 		var jobResultJson map[string]string
 		jobResultJson = make(map[string]string)
 
-		// put the input at result value
-		jobResultJson["result"] = <-s.jobResult
+		select {
+		case jobResultJson["result"] = <-s.jobResult:
+			// put the input at result value
+			jobResultJson["result"] = <-s.jobResult
 
-		w.WriteHeader(http.StatusAccepted)
-		// changes the map to json
-		// writes the json to the writer
-		err := json.NewEncoder(w).Encode(jobResultJson)
-		if err != nil {
+			w.WriteHeader(http.StatusAccepted)
+			// changes the map to json
+			// writes the json to the writer
+			err := json.NewEncoder(w).Encode(jobResultJson)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 - Bad request"))
+				return
+			}
+		default:
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("400 - Bad request"))
 			return
@@ -143,10 +160,14 @@ func main() {
 	server := &Server{
 		jobResult: make(chan string),
 		queueRV:   make(chan []net.Conn),
-		queueTR:   make(chan int),
-		jobInput:  make(chan string),
+		queueTR:   make(chan int, 100000),
+		jobInput:  make(chan string, 100000),
 	}
 
+	defer close(server.jobResult)
+	defer close(server.jobInput)
+	defer close(server.queueRV)
+	defer close(server.queueTR)
 	//handlers
 	http.HandleFunc("/api/queue", server.queueHandler)
 	http.HandleFunc("/api/job", server.jobHandler)
