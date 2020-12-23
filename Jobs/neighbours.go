@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func Neighbours(duration time.Duration, addr_net []byte) []map[string][]byte {
+func Neighbours(duration time.Duration) []map[string][]byte {
 
 	var report []map[string][]byte
 	var sameLAN []map[string][]byte
@@ -47,15 +47,26 @@ func Neighbours(duration time.Duration, addr_net []byte) []map[string][]byte {
 						m["ip4_dst"] = dst.Raw()
 					}
 				}
-				
-				for addr := range addr_net {
-				    if addr = m["ip4_src"] {
-				        sameLAN = append(sameLAN, m["ip4_src"])
-				    } 
-				    else if  addr = m["ip4_dst"] {
-				        sameLAN = append(sameLAN, m["ip4_dst"])
-				    }
-				}
+				// compare to array of net.IP
+				ifaces, err := net.Interfaces()
+				for _, i := range ifaces {
+                     addrs, err := i.Addrs()
+                 // handle err
+				for _, addr := range addrs {
+                     var ip net.IP
+                         switch v := addr.(type) {
+                             case *net.IPNet:
+                                    ip = v.IP
+                                    
+                                    if ip = m["ip4_src"] {
+				                         sameLAN = append(sameLAN, ip)
+				                  } 
+				                    else if  ip = m["ip4_dst"] {
+				                            sameLAN = append(sameLAN, ip)
+				                  }
+                             }
+                        }
+		          }
 
 				report = append(report, m)
 			}
