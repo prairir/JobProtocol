@@ -25,6 +25,7 @@ func GetHeader(result string) (string, error) {
 	if len(rMatchList) > 0 {
 		return strings.ToUpper(rMatchList[0]), nil
 	}
+	fmt.Println("res:", result)
 	return "", errors.New("invalid query")
 }
 

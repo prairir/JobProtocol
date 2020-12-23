@@ -97,16 +97,21 @@ type jobJson struct {
 // output: status code
 func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
-		decoder := json.NewDecoder(r.Body)
+		_ = json.NewDecoder(r.Body)
 
 		var data jobJson
-		err := decoder.Decode(&data)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("400 - Bad request"))
-			return
-		}
+		/*
+			err := decoder.Decode(&data)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 - Bad request"))
+				return
+			}
+		*/
+		log.Println("body:", r.Body)
+		log.Println("form:", r.Form)
 
+		log.Println("data:", data)
 		s.jobInput <- data.job
 		w.WriteHeader(200)
 		w.Write([]byte("200 - Ok response"))
