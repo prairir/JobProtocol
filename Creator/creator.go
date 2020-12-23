@@ -12,7 +12,7 @@ import (
 )
 
 //RunCreator runs the creator
-func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string, jobResult chan string) {
+func RunCreator(jobInput chan string, jobResult chan map[string]string, getQueue chan []net.Conn) {
 	fmt.Println(globals.GetJobNames())
 	// create a listener on that open port
 	listener, err := net.Listen(globals.ConnType, fmt.Sprint(globals.ConnAddr, ":", globals.ConnPort))
@@ -24,7 +24,7 @@ func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string,
 	go c.cmd(jobInput, jobResult)
 	go func() {
 		for {
-			queueRV <- c.queue
+			getQueue <- c.queue
 		}
 	}()
 	for {
@@ -55,17 +55,19 @@ type Creator struct {
 // -- PROCESSING JOB --
 // 2 JOB accepted/rejected
 // 3 JOB result
-func (c *Creator) cmd(jobInput chan string, jobResult chan string) {
+func (c *Creator) cmd(jobInput chan string, jobResult chan map[string]string) {
 	var query string
 	var header string
 	var err error
 	isNewQuery := true
 	for {
+		fmt.Println("ready for channel input...")
 		if isNewQuery {
 			// read inpt from the job channel
 			query = <-jobInput
 			query = strings.TrimSpace(query)
 			header, err = globals.GetHeader(query)
+			fmt.Println("query:", query)
 			if err != nil {
 				fmt.Println(err)
 				continue
@@ -116,7 +118,13 @@ func (c *Creator) cmd(jobInput chan string, jobResult chan string) {
 			fmt.Println("job done! result: ")
 			fmt.Println(response[len(respHeader)+1:])
 			// write the response to the job result channel
-			jobResult <- string(response[len(respHeader)+1])
+			if jobResult != nil {
+				m := make(map[string]string)
+				m[conn.RemoteAddr().String()] = strings.TrimSpace(fmt.Sprint(query, " => ", response[len(respHeader)+1:]))
+				fmt.Println("sending", m, "as job result...")
+				jobResult <- m
+				fmt.Println("done sending!")
+			}
 
 			c.mutex.Lock()
 			c.queue = append(c.queue, conn)
