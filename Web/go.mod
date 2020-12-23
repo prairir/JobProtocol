@@ -8,5 +8,5 @@ replace github.com/prairir/JobProtocol/Globals => ../Globals
 
 require (
 	github.com/prairir/JobProtocol/Creator v0.0.0-00010101000000-000000000000
-	github.com/prairir/JobProtocol/Globals v0.0.0-00010101000000-000000000000
+	github.com/prairir/JobProtocol/Globals v0.0.0-20201223035010-c67d396ff354
 )

