@@ -1,0 +1,192 @@
+@import url(https://fonts.googleapis.com/css?family=Montserrat:900|Raleway:400,400i,700,700i);
+
+body {
+	background-color: #111111;
+	font-family: 'Raleway';
+
+}
+
+.search{
+  	width: 90%;
+  	position: relative;
+  	display: flex;
+	margin-top: 20px;
+	margin-left: auto;
+	margin-right: auto;
+	padding: 10px;
+}
+
+.searchButton{
+	width: 120px;
+  	height: 41px;
+  	border: 1px solid #111;
+  	background: #111;
+	border-radius: 0px 5px 5px 0px;
+  	text-align: center;
+  	color: #fff;
+  	cursor: pointer;
+  	font-size: 16px;
+}
+
+.searchButton:hover{
+	color: #40dcff;
+}
+
+.searchTerm{
+  	width: 100%;
+  	border: 3px solid #111;
+  	padding: 5px;
+  	height: 25px;
+	border-radius: 5px 0 0 5px;
+  	outline: none;
+  	color: #111;
+}
+
+/*Resize the wrap to see the search bar change!*/
+.wrap{
+  	width: 47%;
+  	position: relative;
+  	top: 140px;
+  	left: 50%;
+  	transform: translate(-50%, -50%);
+  	text-align: center;
+  	color: #fff;
+	background-color: #222
+}
+
+.queue{
+	margin-left: auto;
+	margin-right: auto;
+  	width: 47%;
+  	position: relative;
+  	text-align: center;
+  	font-size: 30px;
+  	color: #fff;
+	background-color: #222;
+}
+
+.switch-field {
+	overflow: hidden;
+}
+
+.switch-field input[type="radio"] {
+	position: absolute !important;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+	overflow: hidden;
+}
+
+.switch-field label {
+	background-color: #111;
+	color: #fff;
+	font-size: 14px;
+	text-align: center;
+	padding: 8px 4vh;
+	margin-right: -1px;
+	transition: all 0.1s ease-in-out;
+	border-radius: 4px
+}
+
+.switch-field label:hover {
+	cursor: pointer;
+	color: #40dcff;
+}
+
+.switch-field input:checked + label:hover {
+	color: white;
+	background-color: #111;
+}
+
+.switch-field input:checked + label {
+	background-color: #40dcff;
+	box-shadow: none;
+}
+
+.form {
+	max-width: 600px;
+	font-weight: normal;
+	line-height: 1.625;
+	padding: 16px;
+}
+
+h2 {
+	font-size: 70px;
+	margin-bottom: 8px;
+}
+
+h3 {
+	font-size: 35px;
+	margin-bottom: 8px;
+}
+
+hr {
+	clear: both;
+	visibility: hidden;
+}
+
+li {
+	margin-top: 5px;
+	margin-left: 22px;
+	margin-right: auto;
+  	width: 90%;
+  	position: relative;
+  	text-align: center;
+  	font-size: 22px;
+	background-color: #555;
+	border-radius: 5px;
+  	outline: none;
+}
+
+li:hover {
+	background-color: #40dcff;
+}
+
+a {
+	color: #FFFFFF;
+    text-decoration: none;
+}
+
+p {
+	font-size: 12px;
+	text-align: left;
+}
+
+.collapsible {
+	background-color: #111;
+	color: white;
+	cursor: pointer;
+	padding: 18px;
+	width: 70%;
+	border: none;
+	text-align: left;
+	outline: none;
+	font-size: 15px;
+}
+
+.active, .collapsible:hover {
+  	background-color: #40dcff;
+}
+
+.collapsible:after {
+  	content: '\002B';
+  	color: white;
+  	font-weight: bold;
+  	float: right;
+  	margin-left: 5px;
+}
+
+.active:after {
+  	content: "\2212";
+}
+
+.content {
+	color: black;
+	margin: auto;
+	width: 66%;
+	text-align: left;
+ 	padding: 0px 18px;
+  	max-height: 0;
+  	overflow: hidden;
+  	transition: max-height 0.2s ease-out;
+  	background-color: #fff;
+}

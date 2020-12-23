@@ -15,6 +15,12 @@ github.com/bachittle/ping-go v1.1.8 h1:TzvM15Bm1Qcc0WORJ15sj+b5RVKR0pCgSVBArPKu0
 github.com/bachittle/ping-go v1.1.8/go.mod h1:WFoS0K8/avaYDM593gvoYjxg7QUQfgK5BXRX4w2Qtfg=
 github.com/bachittle/ping-go v1.1.10 h1:RtOivZcGiNpr9PUw3sS818lVEb6Brn1snM5rGGGnyKo=
 github.com/bachittle/ping-go v1.1.10/go.mod h1:KruWeh0Wayec4cnmfdosQKuupZh35G1pbH0xTMm6OWY=
+github.com/bachittle/ping-go-v2 v0.0.0-20201222172932-a3af522675dc h1:7lWSArhY01r3bKnZBbReLVVYKNvNRwLRIkyDXdY++rw=
+github.com/bachittle/ping-go-v2 v0.0.0-20201222172932-a3af522675dc/go.mod h1:aKwkwNvMDQm2nUqINKAslcPFb2qyuUGe4Jcr60OfMJs=
+github.com/bachittle/ping-go-v2 v0.0.0-20201222175136-311fbb669f3f h1:1Ti+eZLK2TB4pvWiGo5+5cwFXNZ9YPOvUxpBFe1jGic=
+github.com/bachittle/ping-go-v2 v0.0.0-20201222175136-311fbb669f3f/go.mod h1:aKwkwNvMDQm2nUqINKAslcPFb2qyuUGe4Jcr60OfMJs=
+github.com/bachittle/ping-go-v2 v1.0.1 h1:E5OWgutQLNYQXbrSNaUoqiV5ZtlPF8sVMfAuTp3ykks=
+github.com/bachittle/ping-go-v2 v1.0.1/go.mod h1:aKwkwNvMDQm2nUqINKAslcPFb2qyuUGe4Jcr60OfMJs=
 github.com/bachittle/ping-go/pinger v0.0.0-20201128203717-eb7e3f296fba h1:8Km5NQjuGemU1DgWLAa8poTlBTISKKkzXI9OHmuc34o=
 github.com/bachittle/ping-go/pinger v0.0.0-20201128203717-eb7e3f296fba/go.mod h1:JNWE/RfpzwPOWFrFhLaD9tHb8LvCHDpXdx0t0hzVTbk=
 github.com/bachittle/ping-go/pinger v0.0.0-20201129022748-7de8257ac302 h1:+VWL3/9WL9XaKESuaPdUFou89Pxh34UXPqj+ryQe/Sc=

@@ -1,4 +1,4 @@
-package main
+package creator
 
 import (
 	"bufio"
@@ -11,7 +11,8 @@ import (
 	globals "github.com/prairir/JobProtocol/Globals"
 )
 
-func main() {
+//RunCreator runs the creator
+func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string, jobResult chan string) {
 	fmt.Println(globals.GetJobNames())
 	// create a listener on that open port
 	listener, err := net.Listen(globals.ConnType, fmt.Sprint(globals.ConnAddr, ":", globals.ConnPort))
@@ -20,7 +21,12 @@ func main() {
 	fmt.Println("listening to", globals.ConnAddr, "at port", globals.ConnPort)
 
 	c := Creator{}
-	go c.cmd()
+	go c.cmd(jobInput, jobResult)
+	go func() {
+		for {
+			queueRV <- c.queue
+		}
+	}()
 	for {
 		// if error go through close connection process
 		fmt.Println("Waiting for Job Seeker...")
@@ -31,6 +37,7 @@ func main() {
 		}
 		defer conn.Close()
 		go c.handleHello(conn)
+
 	}
 }
 
@@ -48,16 +55,15 @@ type Creator struct {
 // -- PROCESSING JOB --
 // 2 JOB accepted/rejected
 // 3 JOB result
-func (c *Creator) cmd() {
+func (c *Creator) cmd(jobInput chan string, jobResult chan string) {
 	var query string
 	var header string
 	var err error
 	isNewQuery := true
 	for {
 		if isNewQuery {
-			reader := bufio.NewReader(os.Stdin)
-			fmt.Print("Enter query: ")
-			query, _ = reader.ReadString('\n')
+			// read inpt from the job channel
+			query = <-jobInput
 			query = strings.TrimSpace(query)
 			header, err = globals.GetHeader(query)
 			if err != nil {
@@ -69,6 +75,7 @@ func (c *Creator) cmd() {
 		var conn net.Conn
 		c.mutex.Lock()
 		fmt.Println(c.queue)
+		// getting top value of queue
 		if len(c.queue) != 0 {
 			conn = (c.queue)[0]
 			c.queue = (c.queue)[1:]
@@ -81,6 +88,7 @@ func (c *Creator) cmd() {
 		c.mutex.Unlock()
 		fmt.Println(header)
 		// job starts
+		// sends header first
 		fmt.Fprintln(conn, header)
 		accept, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
@@ -107,6 +115,9 @@ func (c *Creator) cmd() {
 		if respHeader == "JOB SUCC" {
 			fmt.Println("job done! result: ")
 			fmt.Println(response[len(respHeader)+1:])
+			// write the response to the job result channel
+			jobResult <- string(response[len(respHeader)+1])
+
 			c.mutex.Lock()
 			c.queue = append(c.queue, conn)
 			c.mutex.Unlock()

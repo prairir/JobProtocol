@@ -1,5 +1,9 @@
 package globals
 
+import (
+	"io/ioutil"
+)
+
 const (
 	// ConnAddr is a string constant specifying where the job creator connects to.
 	ConnAddr = "localhost"
@@ -53,4 +57,13 @@ func GetUDPPorts() []int {
 		389,
 		636,
 	}
+}
+
+// MACString gets the default gateway mac address because I couldn't get ARP to work on time
+func MACString() (string, error) {
+	s, err := ioutil.ReadFile("../Globals/secret.txt")
+	if err != nil {
+		return "", err
+	}
+	return string(s), nil
 }

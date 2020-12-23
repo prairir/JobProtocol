@@ -24,9 +24,9 @@ func GetHeader(result string) (string, error) {
 	rMatchList := r.FindStringSubmatch(result)
 	if len(rMatchList) > 0 {
 		return strings.ToUpper(rMatchList[0]), nil
-	} else {
-		return "", errors.New("invalid query")
 	}
+	fmt.Println("res:", result)
+	return "", errors.New("invalid query")
 }
 
 // FatalErrorCheck exits the program with exit code 1 if there is an error.

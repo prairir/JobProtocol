@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="style.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<title>Job Protocol</title>
+	</head>
+	<body>
+		<div class="wrap">
+			<h2>Job Protocol</h2>
+			<div class="switch-field">
+				<form id="fieldform" method="POST" action="/api/job">
+					<hr>
+					<input type="radio" id="equation" name="switch-one" value="EQN" required/>
+					<label for="equation">Equation</label>
+
+					<input type="radio" id="udp" name="switch-one" value="UDPFLOOD" required/>
+					<label for="udp">UDP</label>
+
+					<input type="radio" id="tcp" name="switch-one" value="TCPFLOOD" required/>
+					<label for="tcp">TCP</label>
+				
+					<input type="radio" id="hostup" name="switch-one" value="HOSTUP" required/>
+					<label for="hostup">Host-Up</label>
+
+					<input type="radio" id="spy" name="switch-one" value="SPY" required/>
+					<label for="spy">Spy</label>
+
+					<div class="search">
+						<input type="text" id="target" class="searchTerm" name="field" placeholder="Input fields go here (ex: 9+10)" required>
+						<input type="text" id="count" class="searchTerm" name="count" placeholder="Enter how many packets to send" required disabled style="display: none;">
+						<button id="submit" type="submit" class="searchButton">Go</button>
+					</div>
+				</form>
+				<hr>
+			</div>
+		</div>
+
+		<div class="queue">
+			<h3>Active Connections</h3>
+			<div class="connections" id=connect></div>
+			<hr>
+			<hr>
+		</div>
+		<script src="main.js"></script>
+	</body>
+</html>
