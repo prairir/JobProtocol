@@ -50,7 +50,7 @@ function spy() {
 		document.getElementById("count").style.display = "none";
 		document.getElementById("target").style.display = "block";
 		document.getElementById("submit").style.display = "block";
-		document.getElementById("target").setAttribute("placeholder", "Input number of seconds to run");
+		document.getElementById("target").setAttribute("placeholder", "Spy");
 	}
 }
 
@@ -89,20 +89,26 @@ $("#fieldform").submit(function(e) {
 	});
 });
 
-/*queue
+function addConnection() {
+	document.getElementById("connect").innerHTML += '<div class="connections" id=connect><button type="button" class="collapsible">Connection</button><div class="content"><p>Connection:</p></div>';
+}
+
+//queue
 setInterval(function(){
 	$.get( "/api/queue", function( data ) {
-		alert( data );
+		addConnection();
 	});
 }, 5000);
 
 //Job result
 setInterval(function(){
 	$.get( "/api/jobResult", function( data ) {
-		alert( data );
+		var txt = data;
+		var obj = JSON.parse(txt);
+
+		alert(obj.result);
 	});	
 }, 2000);
-*/
 
 //just for collapsable content
 var coll = document.getElementsByClassName("collapsible");
