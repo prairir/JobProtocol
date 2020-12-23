@@ -2,23 +2,19 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
-
-	globals "github.com/prairir/JobProtocol/Globals"
 )
 
 type queueJson struct {
-	result string
+	queue []interface{}
 }
 
 // testing /api/queue route
 // make sure the server is running
 func TestWebQueue(t *testing.T) {
-	port := fmt.Sprintf("%d", globals.ConnPort)
-	resp, err := http.Get("http://localhost:" + port)
+	resp, err := http.Get("http://localhost:8080/api/queue")
 	if err != nil {
 		t.Errorf("/api/queue failed, are you sure the server is running?\nErr: %s", err)
 		return
@@ -35,8 +31,8 @@ func TestWebQueue(t *testing.T) {
 		return
 	}
 
-	if data.result != "" || resp.StatusCode == http.StatusBadRequest {
-		t.Logf("/api/queue sucess, got %s", data.result)
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Logf("/api/queue sucess, got %s", data.queue)
 		return
 	}
 	t.Errorf("/api/queue failed, are you sure the server is running?\nErr: no result from server")
@@ -46,13 +42,11 @@ func TestWebQueue(t *testing.T) {
 // testing if the /api/job route works
 // make sure the server is running
 func TestWebJob(t *testing.T) {
-	port := fmt.Sprintf("%d", globals.ConnPort)
-
 	formData := url.Values{
 		"job": {"JOB EQN 1+2"},
 	}
 
-	resp, err := http.PostForm("http://localhost:"+port, formData)
+	resp, err := http.PostForm("http://localhost:8080/api/job", formData)
 
 	if err != nil {
 		t.Errorf("/api/job failed, are you sure the server is running?\nErr: %s", err)
