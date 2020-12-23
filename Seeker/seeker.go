@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -146,8 +147,17 @@ func Seeker() {
 				conn.Write([]byte("JOB SUCC \r\n"))
 				break
 			case "JOB TRACERT":
-				ips := jobs.Traceroute("Wi-Fi", data)
-				conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
+				data2 := strings.Split(data, " ")
+				if len(data2) > 1 {
+				} else {
+					if runtime.GOOS == "windows" {
+						ips := jobs.Traceroute("Wi-Fi", data2[1])
+						conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
+					} else {
+						ips := jobs.Traceroute("eth0", data2[1])
+						conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
+					}
+				}
 				break
 			}
 			state = 1
