@@ -89,26 +89,41 @@ $("#fieldform").submit(function(e) {
 	});
 });
 
-function addConnection() {
-	document.getElementById("connect").innerHTML += '<div class="connections" id=connect><button type="button" class="collapsible">Connection</button><div class="content"><p>Connection:</p></div>';
+function addConnection(data) {
+	var d = JSON.parse(data);
+	var s = "";
+	d['queue'].forEach(ip=> {
+		s += `<button type="button" class="collapsible">${ip}</button>
+<div class="content">
+	<p>Job Result:</p>
+</div>`;
+	});
+	document.getElementById("connect").innerHTML = s;
 }
 
 //queue
+$.get( "/api/queue", function( data ) {
+	console.log(data)
+	addConnection(data);
+});
 setInterval(function(){
 	$.get( "/api/queue", function( data ) {
-		addConnection();
+		console.log(data)
+		addConnection(data);
 	});
 }, 5000);
 
 //Job result
+/*
 setInterval(function(){
 	$.get( "/api/jobResult", function( data ) {
 		var txt = data;
 		var obj = JSON.parse(txt);
 
-		alert(obj.result);
+		//alert(obj.result);
 	});	
 }, 2000);
+*/
 
 //just for collapsable content
 var coll = document.getElementsByClassName("collapsible");

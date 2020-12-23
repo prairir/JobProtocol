@@ -19,6 +19,7 @@ type Server struct {
 	queueRV   chan []net.Conn
 	queueTR   chan int
 	jobInput  chan string
+	connQueue []net.Conn
 }
 
 // go handler for queue GET request
@@ -50,7 +51,10 @@ func (s *Server) queueHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		connQueue = <-s.queueRV
+		if connQueue == nil {
+			connQueue = s.connQueue
+		}
+
 		// just init stuff
 		var queueJson map[string][]string
 		queueJson = make(map[string][]string)
@@ -175,10 +179,12 @@ func main() {
 
 	//run the stuff
 	log.Println("Listening on http://localhost:8080...")
-	err := http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		err := http.ListenAndServe(":8080", nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	creator.RunCreator(server.queueTR, server.queueRV, server.jobInput, server.jobResult)
 
