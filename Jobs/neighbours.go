@@ -1,23 +1,23 @@
 package jobs
 
 import (
+	"bytes"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"net"
 	"time"
 )
 
-func Neighbours(duration time.Duration) []map[string][]byte {
-
-	var report []map[string][]byte
-	var sameLAN []map[string][]byte
+//Neighbours checks for job seeker neighbours within the same LAN
+// it checks if ip addresses in an ip addr array are floating around the LAN
+func Neighbours(duration time.Duration) (sameLAN [][]byte, report []map[string][]byte) {
 
 	go func() {
 		// opens packet souce on an interface
-		if handle, err := pcap.OpenLive("eth0", 1600, true, duration); err != nil {
+		if handle, err := pcap.OpenLive("\\Device\\NPF_{2F557FE1-6FE0-4B4F-8C12-3B40FC5C87A6}", 1600, true, duration); err != nil {
 			panic(err)
 		} else {
-
 			// deserialize / decode -> turn bytes from eth0 into packet
 			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
 			//iterate through packets
@@ -49,31 +49,36 @@ func Neighbours(duration time.Duration) []map[string][]byte {
 				}
 				// compare to array of net.IP
 				ifaces, err := net.Interfaces()
+				if err != nil {
+					panic(err)
+				}
 				for _, i := range ifaces {
-                     addrs, err := i.Addrs()
-                 // handle err
-				for _, addr := range addrs {
-                     var ip net.IP
-                         switch v := addr.(type) {
-                             case *net.IPNet:
-                                    ip = v.IP
-                                    
-                                    if ip = m["ip4_src"] {
-				                         sameLAN = append(sameLAN, ip)
-				                  } 
-				                    else if  ip = m["ip4_dst"] {
-				                            sameLAN = append(sameLAN, ip)
-				                  }
-                             }
-                        }
-		          }
+					addrs, err := i.Addrs()
+					if err != nil {
+						panic(err)
+					}
+					// handle err
+					for _, addr := range addrs {
+						var ip net.IP
+						switch v := addr.(type) {
+						case *net.IPNet:
+							ip = v.IP
 
-				report = append(report, m)
+							if bytes.Equal(ip, m["ip4_src"]) {
+								sameLAN = append(sameLAN, ip)
+							} else if bytes.Equal(ip, m["ip4_dst"]) {
+								sameLAN = append(sameLAN, ip)
+							}
+							break
+						}
+					}
+
+					report = append(report, m)
+				}
 			}
 		}
 	}()
 
 	time.Sleep(duration)
-	return report
-	return sameLAN
+	return
 }

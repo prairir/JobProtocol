@@ -6,6 +6,6 @@ import (
 )
 
 func TestNeighbours(t *testing.T) {
-	m := neighbours(1 * time.Second)
-	t.Log(m)
+	m, res := Neighbours(1 * time.Second)
+	t.Log(m, res)
 }
