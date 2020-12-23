@@ -1,4 +1,4 @@
-package main
+package creator
 
 import (
 	"bufio"
@@ -11,6 +11,7 @@ import (
 	globals "github.com/prairir/JobProtocol/Globals"
 )
 
+//RunCreator runs the creator
 func RunCreator(queueTR chan int, queueRV chan []net.Conn, jobInput chan string, jobResult chan string) {
 	fmt.Println(globals.GetJobNames())
 	// create a listener on that open port

