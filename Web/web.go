@@ -96,6 +96,8 @@ func (s *Server) jobHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.jobInput <- data.job
+		w.WriteHeader(200)
+		w.Write([]byte("200 - Ok response"))
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("400 - Wrong request method"))
@@ -116,14 +118,21 @@ func (s *Server) jobResultHandler(w http.ResponseWriter, r *http.Request) {
 		var jobResultJson map[string]string
 		jobResultJson = make(map[string]string)
 
-		// put the input at result value
-		jobResultJson["result"] = <-s.jobResult
+		select {
+		case jobResultJson["result"] = <-s.jobResult:
+			// put the input at result value
+			jobResultJson["result"] = <-s.jobResult
 
-		w.WriteHeader(http.StatusAccepted)
-		// changes the map to json
-		// writes the json to the writer
-		err := json.NewEncoder(w).Encode(jobResultJson)
-		if err != nil {
+			w.WriteHeader(http.StatusAccepted)
+			// changes the map to json
+			// writes the json to the writer
+			err := json.NewEncoder(w).Encode(jobResultJson)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 - Bad request"))
+				return
+			}
+		default:
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte("400 - Bad request"))
 			return
