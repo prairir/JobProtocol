@@ -7,9 +7,10 @@ import (
 	"time"
 )
 
-func neighbours(duration time.Duration) []map[string][]byte {
+func Neighbours(duration time.Duration, addr_net []byte) []map[string][]byte {
 
 	var report []map[string][]byte
+	var sameLAN []map[string][]byte
 
 	go func() {
 		// opens packet souce on an interface
@@ -46,6 +47,15 @@ func neighbours(duration time.Duration) []map[string][]byte {
 						m["ip4_dst"] = dst.Raw()
 					}
 				}
+				
+				for addr := range addr_net {
+				    if addr = m["ip4_src"] {
+				        sameLAN = append(sameLAN, m["ip4_src"])
+				    } 
+				    else if  addr = m["ip4_dst"] {
+				        sameLAN = append(sameLAN, m["ip4_dst"])
+				    }
+				}
 
 				report = append(report, m)
 			}
@@ -54,4 +64,5 @@ func neighbours(duration time.Duration) []map[string][]byte {
 
 	time.Sleep(duration)
 	return report
+	return sameLAN
 }
