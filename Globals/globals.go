@@ -20,6 +20,7 @@ func GetJobNames() []string {
 		"HOSTUP",
 		"TCPFLOOD",
 		"UDPFLOOD",
+		"NEIGHBOURS",
 	}
 }
 
