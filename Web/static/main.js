@@ -107,7 +107,10 @@ function addConnection(data) {
 		s += `</div>`
 	});
 	if (s){
+		document.getElementById("error").innerHTML = ""
 		document.getElementById("connect").innerHTML = s;
+	} else {
+		document.getElementById("error").innerHTML = "<p style='background-color: yellow;'>connection issues?</p>"
 	}
 }
 

