@@ -5,7 +5,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
-	"github.com/prairir/JobProtocol/Globals"
+	//"github.com/prairir/JobProtocol/Globals"
 	"math/rand"
 	"net"
 	"strings"
@@ -60,27 +60,33 @@ type CustomIface struct {
 	IPNet        net.IPNet
 	ResultIPs    []net.IP
 
-	dstIP   net.IP
-	mut     sync.Mutex
-	handle  *pcap.Handle
-	stopper chan int
-	GotType chan uint8
-	gotMAC  chan string
-	id      uint16 // an id that all icmp packets will use
-	Seq     uint16 // an id that all icmp packets will use
+	dstIP     net.IP
+	gatewayIP net.IP
+	mut       sync.Mutex
+	handle    *pcap.Handle
+	stopper   chan int
+	GotType   chan uint8
+	gotMAC    chan net.HardwareAddr
+	id        uint16 // an id that all icmp packets will use
+	Seq       uint16 // an id that all icmp packets will use
 }
 
 // GetGateway gets the gateway IP and MAC.
 func (c *CustomIface) GetGateway() (net.IP, net.HardwareAddr, error) {
-	IP := c.IPAddr.To4()
-	IP[3] = 1
+	gatewayIP := make(net.IP, 0)
+	gatewayIP = append(gatewayIP, c.IPAddr.To4()...)
+	gatewayIP[3] = 1
+	c.gatewayIP = gatewayIP
 	// Set up all the layers' fields we can.
 	eth := layers.Ethernet{
 		SrcMAC:       c.HardwareAddr,
 		DstMAC:       net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
 		EthernetType: layers.EthernetTypeARP,
 	}
-	fmt.Println("IP:", IP)
+	mac1, err := net.ParseMAC("00:00:00:00:00:00")
+	if err != nil {
+		return nil, nil, err
+	}
 	arp := layers.ARP{
 		AddrType:          layers.LinkTypeEthernet,
 		Protocol:          layers.EthernetTypeIPv4,
@@ -88,11 +94,15 @@ func (c *CustomIface) GetGateway() (net.IP, net.HardwareAddr, error) {
 		ProtAddressSize:   4,
 		Operation:         layers.ARPRequest,
 		SourceHwAddress:   []byte(c.HardwareAddr),
-		SourceProtAddress: []byte(c.IPAddr),
-		DstHwAddress:      []byte{0, 0, 0, 0, 0, 0},
-		DstProtAddress:    []byte(IP),
+		DstHwAddress:      []byte(mac1),
+		SourceProtAddress: []byte(c.IPAddr.To4()),
+		DstProtAddress:    []byte(gatewayIP.To4()),
 	}
-	fmt.Println(arp)
+	fmt.Println("arp:", arp)
+	fmt.Println("src hw:", c.HardwareAddr)
+	fmt.Println("dst hw:", len(mac1))
+	fmt.Println("src ip:", c.IPAddr.To4())
+	fmt.Println("dst ip:", gatewayIP.To4())
 	// Set up buffer and options for serialization.
 	buf := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{
@@ -100,14 +110,16 @@ func (c *CustomIface) GetGateway() (net.IP, net.HardwareAddr, error) {
 		ComputeChecksums: true,
 	}
 	// Send one packet for every address.
-	gopacket.SerializeLayers(buf, opts, &eth, &arp)
+	err = gopacket.SerializeLayers(buf, opts, &eth, &arp)
+	if err != nil {
+		return nil, nil, err
+	}
 	if err := c.handle.WritePacketData(buf.Bytes()); err != nil {
 		return nil, nil, err
 	}
 	fmt.Println("sent arp")
 	s := <-c.gotMAC
-	m, err := net.ParseMAC(s)
-	return IP, m, err
+	return gatewayIP, s, err
 }
 
 // Init sets default initializers
@@ -117,6 +129,7 @@ func (c *CustomIface) Init() {
 
 	c.stopper = make(chan int)
 	c.GotType = make(chan uint8, 1)
+	c.gotMAC = make(chan net.HardwareAddr, 1)
 }
 
 // GetIfaces gets ifaces
@@ -168,15 +181,17 @@ func (c *CustomIface) ICMPReqPacket(ipStr string) ([]byte, error) {
 	}
 
 	// Set up all the layers' fields we can.
-	//_, dstMac, err := c.GetGateway()
-	macStr, err := globals.MACString()
-	if err != nil {
-		return nil, err
-	}
-	dstMac, err := net.ParseMAC(macStr)
-	if err != nil {
-		return nil, err
-	}
+	_, dstMac, err := c.GetGateway()
+	/*
+		macStr, err := globals.MACString()
+		if err != nil {
+			return nil, err
+		}
+		dstMac, err := net.ParseMAC(macStr)
+		if err != nil {
+			return nil, err
+		}
+	*/
 	eth := layers.Ethernet{
 		SrcMAC: c.HardwareAddr,
 		//DstMAC:       net.HardwareAddr{0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
@@ -281,13 +296,15 @@ func (c *CustomIface) StartReading() error {
 					return
 				}
 			} else if arpLayer != nil {
-				arpLayer, ok := icmpLayer.(*layers.ARP)
+				arpLayer, ok := arpLayer.(*layers.ARP)
 				if !ok {
-					//panic(err)
-					fmt.Println("error")
+					panic(fmt.Sprint(arpLayer, "is not a layer type ARP"))
 				}
-				fmt.Println("ARP:", arpLayer)
-				c.gotMAC <- "test"
+				if c.gatewayIP != nil && net.IP(arpLayer.SourceProtAddress).To4().String() == c.gatewayIP.To4().String() {
+					fmt.Println(arpLayer)
+					fmt.Println(c.gatewayIP)
+					c.gotMAC <- arpLayer.SourceHwAddress
+				}
 			}
 		}
 	}()
