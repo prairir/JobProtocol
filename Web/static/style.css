@@ -184,9 +184,7 @@ p {
 	margin: auto;
 	width: 66%;
 	text-align: left;
- 	padding: 0px 18px;
-  	max-height: 0;
-  	overflow: hidden;
-  	transition: max-height 0.2s ease-out;
-  	background-color: #fff;
+ 	padding: 20px;
+  	/*transition: max-height 0.2s ease-out;*/
+  	background-color: #999;
 }

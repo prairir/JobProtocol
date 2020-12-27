@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-type queueJson struct {
+type queueJSON struct {
 	queue []interface{}
 }
 
@@ -24,7 +24,7 @@ func TestWebQueue(t *testing.T) {
 
 	decoder := json.NewDecoder(resp.Body)
 
-	var data queueJson
+	var data queueJSON
 	err = decoder.Decode(&data)
 	if err != nil {
 		t.Errorf("/api/queue failed, are you sure the server is running?\nErr: %s", err)

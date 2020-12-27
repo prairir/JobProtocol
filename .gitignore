@@ -5,3 +5,5 @@ Seeker/Seeker
 ext/ping-go
 
 *.exe
+
+Globals/secret.txt
