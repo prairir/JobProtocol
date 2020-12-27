@@ -1,30 +1,59 @@
 package jobs
 
 import (
-	"bytes"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"log"
 	"net"
+	//"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
 //Neighbours checks for job seeker neighbours within the same LAN
 // it checks if ip addresses in an ip addr array are floating around the LAN
-func Neighbours(duration time.Duration) (sameLAN [][]byte, report []map[string][]byte) {
+// returns job seekers within the same LAN, as well as a report of all the packets for future reference.
+//
+// macMap and sameLAN structure:
+// {
+//		"192.168.50.1" : [
+// 			"12:34:56:78:9A:BC",
+// 			"34:56:78:9A:BC:DE"
+// 		]
+// }
+func Neighbours(macMap map[string]interface{}, duration time.Duration) (sameLAN map[string]map[string]int, report map[string]map[string]int) {
 
-	go func() {
-		// opens packet souce on an interface
-		if handle, err := pcap.OpenLive("\\Device\\NPF_{2F557FE1-6FE0-4B4F-8C12-3B40FC5C87A6}", 1600, true, duration); err != nil {
+	report = make(map[string]map[string]int)
+	sameLAN = make(map[string]map[string]int)
+	var doneChans []chan struct{}
+	var mut sync.Mutex
+	// opens packet souce on an interface
+	ifaces, err := pcap.FindAllDevs()
+	if err != nil {
+		panic(err)
+	}
+	for i, iface := range ifaces {
+		handle, err := pcap.OpenLive(iface.Name, 1600, true, duration)
+		if err != nil {
 			panic(err)
-		} else {
-			// deserialize / decode -> turn bytes from eth0 into packet
-			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-			//iterate through packets
+		}
+		doneChans = append(doneChans, make(chan struct{}))
+		// deserialize / decode -> turn bytes from eth0 into packet
+		packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
+		//iterate through packets
+		go func(index int) {
 			for packet := range packetSource.Packets() {
-				m := make(map[string][]byte)
+				select {
+				case <-doneChans[index]:
+					return
+				default:
+				}
 				// decode ethernet and IPv4 layers
 				// checks for linklayer
+				var macSrc net.HardwareAddr
+				var macDst net.HardwareAddr
 				if eth := packet.Layer(layers.LayerTypeEthernet); eth != nil {
 					//extracts srctMAC and dstMAC
 					eth, ok := eth.(*layers.Ethernet)
@@ -32,53 +61,104 @@ func Neighbours(duration time.Duration) (sameLAN [][]byte, report []map[string][
 						panic("invalid ethernet packet")
 					}
 					src, dst := eth.LinkFlow().Endpoints()
+					macSrc = src.Raw()
+					macDst = dst.Raw()
+					log.Println("macSrc:", macSrc)
+					log.Println("macDst:", macDst)
 					// adds src to []byte
-					m["mac_src"] = src.Raw()
-					m["mac_dst"] = dst.Raw()
 				}
 				// checks for IPv4 layer
 				if ip4 := packet.Layer(layers.LayerTypeIPv4); ip4 != nil {
 					// extracts end points, srcIP and dstIP
 					ip4, ok := ip4.(*layers.IPv4)
 					if ok {
-						src, dst := ip4.NetworkFlow().Endpoints()
+						ipSrc, ipDst := ip4.NetworkFlow().Endpoints()
 						// adds src to []byte
-						m["ip4_src"] = src.Raw()
-						m["ip4_dst"] = dst.Raw()
+						if macSrc != nil && macDst != nil {
+							if ipSrc.Raw() != nil && ipDst.Raw() != nil {
+								mut.Lock()
+								if report[ipSrc.String()] == nil {
+									report[ipSrc.String()] = make(map[string]int)
+								}
+								if report[ipDst.String()] == nil {
+									report[ipDst.String()] = make(map[string]int)
+								}
+								report[ipSrc.String()][macSrc.String()]++
+								report[ipDst.String()][macDst.String()]++
+								mut.Unlock()
+								for ip, macs := range macMap {
+									// values in json that may not be IPs...
+									if ip == "duration" {
+										continue
+									}
+									//var port int
+									n := strings.Index(ip, ":")
+									if n != -1 {
+										ip = ip[:n]
+										/*
+											port, err = strconv.Atoi(ip[n+1:])
+											if err != nil {
+												panic(err)
+											}
+										*/
+									}
+									macs, ok := macs.([]string)
+									if !ok {
+										continue
+									}
+									for _, mac := range macs {
+										if report[ip][mac] > 0 {
+											if sameLAN[ip] == nil {
+												sameLAN[ip] = make(map[string]int)
+											}
+											sameLAN[ip][mac]++
+										}
+									}
+								}
+							}
+						}
 					}
 				}
 				// compare to array of net.IP
-				ifaces, err := net.Interfaces()
-				if err != nil {
-					panic(err)
-				}
-				for _, i := range ifaces {
-					addrs, err := i.Addrs()
+				/*
+					ifaces, err := net.Interfaces()
 					if err != nil {
 						panic(err)
 					}
-					// handle err
-					for _, addr := range addrs {
-						var ip net.IP
-						switch v := addr.(type) {
-						case *net.IPNet:
-							ip = v.IP
+					for _, iface := range ifaces {
+						addrs, err := iface.Addrs()
+						if err != nil {
+							panic(err)
+						}
+						// handle err
+						for _, addr := range addrs {
+							var ip net.IP
+							switch v := addr.(type) {
+							case *net.IPNet:
+								ip = v.IP
 
-							if bytes.Equal(ip, m["ip4_src"]) {
-								sameLAN = append(sameLAN, ip)
-							} else if bytes.Equal(ip, m["ip4_dst"]) {
-								sameLAN = append(sameLAN, ip)
+								if bytes.Equal(ip, m["ip4_src"]) {
+									mut.Lock()
+									sameLAN = append(sameLAN, ip)
+									mut.Unlock()
+								} else if bytes.Equal(ip, m["ip4_dst"]) {
+									mut.Lock()
+									sameLAN = append(sameLAN, ip)
+									mut.Unlock()
+								}
+								break
 							}
-							break
 						}
 					}
-
-					report = append(report, m)
-				}
+				*/
 			}
-		}
-	}()
+		}(i)
+	}
 
 	time.Sleep(duration)
+	// signify closure of all goroutines
+	for _, ch := range doneChans {
+		close(ch) // closing channel will "read" from it on loop
+	}
 	return
 }

